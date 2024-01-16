@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -23,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -49,7 +52,8 @@ fun GameScreen(
             onAddDialogDismissed = { viewModel.onAddDialogDismissed() },
             onSubtractDialogConfirmed = { viewModel.onSubtractDialogConfirmed() },
             onSubtractDialogDismissed = { viewModel.onSubtractDialogDismissed() },
-            onMoneyValueChanged = { viewModel.onMoneyValueChanged(it) })
+            onMoneyValueChanged = { viewModel.onMoneyValueChanged(it) },
+            onFinishGameButtonClicked = { viewModel.onFinishGameClicked() })
     }
 }
 
@@ -105,9 +109,23 @@ fun GameInProgressScreen(
     onSubtractButtonClicked: () -> Unit,
     onSubtractDialogConfirmed: () -> Unit,
     onSubtractDialogDismissed: () -> Unit,
-    onMoneyValueChanged: (String) -> Unit
+    onMoneyValueChanged: (String) -> Unit,
+    onFinishGameButtonClicked: () -> Unit
 ) {
-    Scaffold(topBar = { TopAppBar(title = { Text(text = stringResource(id = R.string.app_name)) }) }) { contentPadding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = stringResource(id = R.string.app_name)) },
+                actions = {
+                    IconButton(onClick = onFinishGameButtonClicked) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_finish_game),
+                            contentDescription = stringResource(id = R.string.finish_game)
+                        )
+                    }
+                }
+            )
+        }) { contentPadding ->
         Column(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
@@ -155,22 +173,24 @@ fun GameInProgressScreen(
         }
     }
 
-    if(state.showAddMoneyDialog) {
+    if (state.showAddMoneyDialog) {
         MoneyTransferDialog(
             title = stringResource(id = R.string.add),
             value = state.moneyValue,
             onValueChanged = onMoneyValueChanged,
             onDialogDismissed = onAddDialogDismissed,
-            onDialogConfirmed = onAddDialogConfirmed)
+            onDialogConfirmed = onAddDialogConfirmed
+        )
     }
 
-    if(state.showSubtractMoneyDialog) {
+    if (state.showSubtractMoneyDialog) {
         MoneyTransferDialog(
             title = stringResource(id = R.string.subtract),
             value = state.moneyValue,
             onValueChanged = onMoneyValueChanged,
             onDialogDismissed = onSubtractDialogDismissed,
-            onDialogConfirmed = onSubtractDialogConfirmed)
+            onDialogConfirmed = onSubtractDialogConfirmed
+        )
     }
 }
 
@@ -190,7 +210,7 @@ fun MoneyTransferDialog(
                 value = value,
                 onValueChange = onValueChanged,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                label = { Text(text = stringResource(id = R.string.amount))}
+                label = { Text(text = stringResource(id = R.string.amount)) }
             )
         },
         confirmButton = {

@@ -7,4 +7,5 @@
     <string name="add">Add</string>
     <string name="subtract">Subtract</string>
     <string name="amount">Amount of money</string>
+    <string name="finish_game">Finish the game</string>
 </resources>
