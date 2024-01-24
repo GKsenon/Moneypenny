@@ -2,63 +2,81 @@ package com.gksenon.moneypenny
 
 import com.gksenon.moneypenny.data.InMemoryAccountant
 import com.gksenon.moneypenny.domain.Accountant
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
-@OptIn(ExperimentalCoroutinesApi::class)
+private const val STARTING_MONEY = 1500
+
 class AccountantTest {
 
     private val accountant: Accountant = InMemoryAccountant()
 
-    @Test
-    fun accountant_beforeGameIsStarted_balanceIsNull() = runTest {
-        advanceUntilIdle()
-        assertNull(accountant.getBalance().first())
+    companion object {
+
+        @JvmStatic
+        fun provideAddMoneyParameters() = listOf(
+            Arguments.of(1000, listOf(STARTING_MONEY, 1000)),
+            Arguments.of(0, listOf(STARTING_MONEY))
+        )
+
+        @JvmStatic
+        fun provideSubtractMoneyParameters() = listOf(
+            Arguments.of(1000, listOf(STARTING_MONEY, -1000)),
+            Arguments.of(0, listOf(STARTING_MONEY))
+        )
     }
 
     @Test
-    fun accountant_startGame_shouldInitBalance() = runTest {
-        accountant.startGame(1500)
-        advanceUntilIdle()
-
-        assertEquals(1500, accountant.getBalance().first())
+    fun accountant_beforeGameIsStarted_transactionHistoryIsEmpty() = runTest {
+        assertTrue(accountant.getTransactionHistory().first().isEmpty())
     }
 
     @Test
-    fun accountant_add_shouldAddCorrectAmount() = runTest {
-        accountant.startGame(1500)
-        advanceUntilIdle()
+    fun accountant_startGame_shouldInitTransactions() = runTest {
+        accountant.startGame(STARTING_MONEY)
 
+        assertEquals(listOf(1500), accountant.getTransactionHistory().first())
+    }
+
+    @Test
+    fun accountant_getTransactionHistory_shouldReturnTransactions() = runTest {
+        accountant.startGame(STARTING_MONEY)
         accountant.add(1000)
-        advanceUntilIdle()
+        accountant.subtract(500)
 
-        assertEquals(2500, accountant.getBalance().first())
+        assertEquals(listOf(STARTING_MONEY, 1000, -500), accountant.getTransactionHistory().first())
     }
 
-    @Test
-    fun accountant_subtract_shouldSubtractCorrectAmount() = runTest {
-        accountant.startGame(1500)
-        advanceUntilIdle()
+    @ParameterizedTest
+    @MethodSource("provideAddMoneyParameters")
+    fun accountant_add_shouldAddCorrectAmount(amount: Int, transactions: List<Int>) = runTest {
+        accountant.startGame(STARTING_MONEY)
+        accountant.add(amount)
 
-        accountant.subtract(1000)
-        advanceUntilIdle()
+        assertEquals(transactions, accountant.getTransactionHistory().first())
+    }
 
-        assertEquals(500, accountant.getBalance().first())
+    @ParameterizedTest
+    @MethodSource("provideSubtractMoneyParameters")
+    fun accountant_subtract_shouldSubtractCorrectAmount(amount: Int, transactions: List<Int>) = runTest {
+        accountant.startGame(STARTING_MONEY)
+        accountant.subtract(amount)
+
+        assertEquals(transactions, accountant.getTransactionHistory().first())
     }
 
     @Test
     fun accountant_finishGame_shouldClearBalance() = runTest {
-        accountant.startGame(1500)
-        advanceUntilIdle()
-        assertEquals(1500, accountant.getBalance().first())
+        accountant.startGame(STARTING_MONEY)
+        assertEquals(listOf(STARTING_MONEY), accountant.getTransactionHistory().first())
 
         accountant.finishGame()
-        advanceUntilIdle()
-        assertNull(accountant.getBalance().first())
+        assertTrue(accountant.getTransactionHistory().first().isEmpty())
     }
 }

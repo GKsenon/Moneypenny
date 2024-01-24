@@ -6,7 +6,7 @@ interface Accountant {
 
     fun startGame(startingMoney: Int)
 
-    fun getBalance(): Flow<Int?>
+    fun getTransactionHistory(): Flow<List<Int>>
 
     fun add(amount: Int)
 

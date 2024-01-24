@@ -23,6 +23,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 
+private const val STARTING_MONEY = 1500
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class GameViewModelTest {
 
@@ -36,6 +38,27 @@ class GameViewModelTest {
             Arguments.of("", ""),
             Arguments.of("20ghfh56", "2056"),
             Arguments.of("-1500", "1500"),
+        )
+
+        @JvmStatic
+        fun provideMoneyValueValidationArguments() = listOf(
+            Arguments.of("", ""),
+            Arguments.of("123456789011", "123456789"),
+            Arguments.of("1234ghfhfh56", "123456")
+        )
+
+        @JvmStatic
+        fun provideAddDialogConfirmationArguments() = listOf(
+            Arguments.of("", listOf(STARTING_MONEY), STARTING_MONEY),
+            Arguments.of("999999999", listOf(999999999, STARTING_MONEY), STARTING_MONEY + 999999999),
+            Arguments.of("2500", listOf(2500, STARTING_MONEY), STARTING_MONEY + 2500)
+        )
+
+        @JvmStatic
+        fun provideSubtractDialogConfirmationArguments() = listOf(
+            Arguments.of("", listOf(STARTING_MONEY), STARTING_MONEY),
+            Arguments.of("999999999", listOf(-999999999, STARTING_MONEY), STARTING_MONEY - 999999999),
+            Arguments.of("2500", listOf(-2500, STARTING_MONEY), STARTING_MONEY - 2500)
         )
     }
 
@@ -56,20 +79,20 @@ class GameViewModelTest {
 
         val state = viewModel.state.value as GameScreenState.GameNotStarted
         assertEquals("", state.startingMoney)
-        verify { accountant.getBalance() }
+        verify { accountant.getTransactionHistory() }
     }
 
     @Test
     fun gameViewModel_initWithStartingMoney_showsGameInProgressState() = runTest {
-        accountant.startGame(1500)
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
 
         val state = viewModel.state.value as GameScreenState.GameInProgress
-        assertEquals(1500, state.balance)
+        assertEquals(STARTING_MONEY, state.balance)
         assertFalse(state.showAddMoneyDialog)
         assertFalse(state.showSubtractMoneyDialog)
-        verify { accountant.getBalance() }
+        verify { accountant.getTransactionHistory() }
     }
 
     @ParameterizedTest
@@ -117,7 +140,7 @@ class GameViewModelTest {
 
     @Test
     fun gameViewModel_onAddButtonClicked_shouldShowAddDialog() = runTest {
-        accountant.startGame(1500)
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onAddButtonClicked()
@@ -128,42 +151,45 @@ class GameViewModelTest {
         assertFalse(state.showSubtractMoneyDialog)
     }
 
-    @Test
-    fun gameViewModel_onMoneyValueChanged_shouldValidateValue() = runTest {
-        accountant.startGame(1500)
+    @ParameterizedTest
+    @MethodSource("provideMoneyValueValidationArguments")
+    fun gameViewModel_onMoneyValueChanged_shouldValidateValue(input: String, output: String) = runTest {
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onAddButtonClicked()
         advanceUntilIdle()
-        viewModel.onMoneyValueChanged("rirnf993939393ee9999")
+        viewModel.onMoneyValueChanged(input)
         advanceUntilIdle()
 
         val state = viewModel.state.value as GameScreenState.GameInProgress
-        assertEquals("993939393", state.moneyValue)
+        assertEquals(output, state.moneyValue)
     }
 
-    @Test
-    fun gameViewModel_onAddDialogConfirmed_shouldAddMoney() = runTest {
-        accountant.startGame(1500)
+    @ParameterizedTest
+    @MethodSource("provideAddDialogConfirmationArguments")
+    fun gameViewModel_onAddDialogConfirmed_shouldAddMoney(input: String, transactions: List<Int>, balance: Int) = runTest {
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onAddButtonClicked()
         advanceUntilIdle()
-        viewModel.onMoneyValueChanged("1000")
+        viewModel.onMoneyValueChanged(input)
         advanceUntilIdle()
         viewModel.onAddDialogConfirmed()
         advanceUntilIdle()
 
         val state = viewModel.state.value as GameScreenState.GameInProgress
-        assertEquals(2500, state.balance)
+        assertEquals(balance, state.balance)
         assertFalse(state.showAddMoneyDialog)
         assertFalse(state.showSubtractMoneyDialog)
-        verify { accountant.add(1000) }
+        assertEquals(transactions, state.transactionHistory)
+//        verify { accountant.add(1000) }
     }
 
     @Test
     fun gameViewModel_onAddDialogDismissed_shouldCloseDialog() = runTest {
-        accountant.startGame(1500)
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onAddButtonClicked()
@@ -174,14 +200,14 @@ class GameViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.state.value as GameScreenState.GameInProgress
-        assertEquals(1500, state.balance)
+        assertEquals(STARTING_MONEY, state.balance)
         assertFalse(state.showAddMoneyDialog)
         assertFalse(state.showSubtractMoneyDialog)
     }
 
     @Test
     fun gameViewModel_onSubtractButtonClicked_shouldShowSubtractDialog() = runTest {
-        accountant.startGame(1500)
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onSubtractButtonClicked()
@@ -192,28 +218,30 @@ class GameViewModelTest {
         assertFalse(state.showAddMoneyDialog)
     }
 
-    @Test
-    fun gameViewModel_onSubtractDialogConfirmed_shouldSubtractMoney() = runTest {
-        accountant.startGame(1500)
+    @ParameterizedTest
+    @MethodSource("provideSubtractDialogConfirmationArguments")
+    fun gameViewModel_onSubtractDialogConfirmed_shouldSubtractMoney(input: String, transactions: List<Int>, balance: Int) = runTest {
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onSubtractButtonClicked()
         advanceUntilIdle()
-        viewModel.onMoneyValueChanged("500")
+        viewModel.onMoneyValueChanged(input)
         advanceUntilIdle()
         viewModel.onSubtractDialogConfirmed()
         advanceUntilIdle()
 
         val state = viewModel.state.value as GameScreenState.GameInProgress
-        assertEquals(1000, state.balance)
+        assertEquals(balance, state.balance)
         assertFalse(state.showAddMoneyDialog)
         assertFalse(state.showSubtractMoneyDialog)
-        verify { accountant.subtract(500) }
+        assertEquals(transactions, state.transactionHistory)
+//        verify { accountant.subtract(500) }
     }
 
     @Test
     fun gameViewModel_onSubtractDialogDismissed_shouldCloseDialog() = runTest {
-        accountant.startGame(1500)
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onSubtractButtonClicked()
@@ -224,14 +252,14 @@ class GameViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.state.value as GameScreenState.GameInProgress
-        assertEquals(1500, state.balance)
+        assertEquals(STARTING_MONEY, state.balance)
         assertFalse(state.showAddMoneyDialog)
         assertFalse(state.showSubtractMoneyDialog)
     }
 
     @Test
     fun gameViewModel_onFinishGameButtonClicked_shouldFinishGame() = runTest {
-        accountant.startGame(1500)
+        accountant.startGame(STARTING_MONEY)
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onFinishGameClicked()

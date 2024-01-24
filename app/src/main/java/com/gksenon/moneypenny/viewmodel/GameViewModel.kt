@@ -18,11 +18,14 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
     val state = _state.asStateFlow()
 
     init {
-        accountant.getBalance().onEach { balance ->
-            val state = if (balance == null) {
+        accountant.getTransactionHistory().onEach { transactionHistory ->
+            val state = if (transactionHistory.isEmpty()) {
                 GameScreenState.GameNotStarted()
             } else {
-                GameScreenState.GameInProgress(balance)
+                GameScreenState.GameInProgress(
+                    balance = transactionHistory.sum(),
+                    transactionHistory = transactionHistory.reversed()
+                )
             }
             _state.update { state }
         }.launchIn(viewModelScope)
@@ -55,10 +58,13 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
     }
 
     fun onAddDialogConfirmed() {
-        _state.update {
-            val state = it as GameScreenState.GameInProgress
-            accountant.add(state.moneyValue.toIntOrNull() ?: 0)
-            state.copy(showAddMoneyDialog = false, moneyValue = "")
+        val currentState = _state.value as GameScreenState.GameInProgress
+        accountant.add(currentState.moneyValue.toIntOrNull() ?: 0)
+        _state.update { previousState ->
+            (previousState as GameScreenState.GameInProgress).copy(
+                showAddMoneyDialog = false,
+                moneyValue = ""
+            )
         }
     }
 
@@ -78,10 +84,13 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
     }
 
     fun onSubtractDialogConfirmed() {
-        _state.update {
-            val state = it as GameScreenState.GameInProgress
-            accountant.subtract(state.moneyValue.toIntOrNull() ?: 0)
-            state.copy(showSubtractMoneyDialog = false, moneyValue = "")
+        val currentState = _state.value as GameScreenState.GameInProgress
+        accountant.subtract(currentState.moneyValue.toIntOrNull() ?: 0)
+        _state.update { previousState ->
+            (previousState as GameScreenState.GameInProgress).copy(
+                showSubtractMoneyDialog = false,
+                moneyValue = ""
+            )
         }
     }
 
@@ -111,6 +120,7 @@ sealed class GameScreenState {
 
     data class GameInProgress(
         val balance: Int = 0,
+        val transactionHistory: List<Int> = emptyList(),
         val showAddMoneyDialog: Boolean = false,
         val showSubtractMoneyDialog: Boolean = false,
         val moneyValue: String = ""

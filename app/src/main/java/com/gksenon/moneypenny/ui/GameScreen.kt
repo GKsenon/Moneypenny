@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -127,7 +129,6 @@ fun GameInProgressScreen(
             )
         }) { contentPadding ->
         Column(
-            verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
@@ -148,8 +149,11 @@ fun GameInProgressScreen(
                         .height(1.dp)
                         .background(color = MaterialTheme.colorScheme.outline)
                 )
-            }
-            Column {
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(state.transactionHistory) {transaction ->
+                        Text(text = transaction.toString())
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -4,25 +4,27 @@ import com.gksenon.moneypenny.domain.Accountant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class InMemoryAccountant: Accountant {
+class InMemoryAccountant : Accountant {
 
-    private val balance = MutableStateFlow<Int?>(null)
+    private val transactions = MutableStateFlow<List<Int>>(emptyList())
 
     override fun startGame(startingMoney: Int) {
-        balance.value = startingMoney
+        transactions.value = listOf(startingMoney)
     }
 
-    override fun getBalance(): Flow<Int?> = balance
+    override fun getTransactionHistory(): Flow<List<Int>> = transactions
 
     override fun add(amount: Int) {
-        balance.value = balance.value!! + amount
+        if (amount != 0)
+            transactions.value = transactions.value.plus(amount)
     }
 
     override fun subtract(amount: Int) {
-        balance.value = balance.value!! - amount
+        if (amount != 0)
+            transactions.value = transactions.value.plus(-amount)
     }
 
     override fun finishGame() {
-        balance.value = null
+        transactions.value = emptyList()
     }
 }
