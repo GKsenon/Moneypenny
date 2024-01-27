@@ -1,16 +1,47 @@
 package com.gksenon.moneypenny.domain
 
 import kotlinx.coroutines.flow.Flow
+import org.joda.time.Instant
+import java.util.UUID
 
-interface Accountant {
+class Accountant(private val gateway: AccountantGateway) {
 
-    fun startGame(startingMoney: Int)
+    suspend fun startGame(startingMoney: Int) {
+        if (startingMoney != 0) {
+            val transaction = Transaction(
+                id = UUID.randomUUID(),
+                time = Instant.now(),
+                amount = startingMoney
+            )
+            gateway.writeTransaction(transaction)
+        }
+    }
 
-    fun getTransactionHistory(): Flow<List<Int>>
+    fun getTransactionHistory(): Flow<List<Transaction>> = gateway.readTransactions()
 
-    fun add(amount: Int)
+    suspend fun add(amount: Int) {
+        if (amount != 0) {
+            val transaction = Transaction(
+                id = UUID.randomUUID(),
+                time = Instant.now(),
+                amount = amount
+            )
+            gateway.writeTransaction(transaction)
+        }
+    }
 
-    fun subtract(amount: Int)
+    suspend fun subtract(amount: Int) {
+        if (amount != 0) {
+            val transaction = Transaction(
+                id = UUID.randomUUID(),
+                time = Instant.now(),
+                amount = -amount
+            )
+            gateway.writeTransaction(transaction)
+        }
+    }
 
-    fun finishGame()
+    suspend fun finishGame() {
+        gateway.clear()
+    }
 }

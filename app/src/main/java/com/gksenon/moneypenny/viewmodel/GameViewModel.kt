@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,8 +24,8 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
                 GameScreenState.GameNotStarted()
             } else {
                 GameScreenState.GameInProgress(
-                    balance = transactionHistory.sum(),
-                    transactionHistory = transactionHistory.reversed()
+                    balance = transactionHistory.sumOf { it.amount },
+                    transactionHistory = transactionHistory.sortedByDescending { it.time }.map { it.amount }
                 )
             }
             _state.update { state }
@@ -45,7 +46,7 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
         val currentState = _state.value as GameScreenState.GameNotStarted
         val startingMoney = currentState.startingMoney.toIntOrNull()
         if (startingMoney != null) {
-            accountant.startGame(startingMoney)
+            viewModelScope.launch { accountant.startGame(startingMoney) }
         } else {
             _state.update { currentState.copy(showStartingMoneyInvalidError = true) }
         }
@@ -59,7 +60,7 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
 
     fun onAddDialogConfirmed() {
         val currentState = _state.value as GameScreenState.GameInProgress
-        accountant.add(currentState.moneyValue.toIntOrNull() ?: 0)
+        viewModelScope.launch { accountant.add(currentState.moneyValue.toIntOrNull() ?: 0) }
         _state.update { previousState ->
             (previousState as GameScreenState.GameInProgress).copy(
                 showAddMoneyDialog = false,
@@ -85,7 +86,7 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
 
     fun onSubtractDialogConfirmed() {
         val currentState = _state.value as GameScreenState.GameInProgress
-        accountant.subtract(currentState.moneyValue.toIntOrNull() ?: 0)
+        viewModelScope.launch { accountant.subtract(currentState.moneyValue.toIntOrNull() ?: 0) }
         _state.update { previousState ->
             (previousState as GameScreenState.GameInProgress).copy(
                 showSubtractMoneyDialog = false,
@@ -108,7 +109,7 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
     }
 
     fun onFinishGameClicked() {
-        accountant.finishGame()
+        viewModelScope.launch { accountant.finishGame() }
     }
 }
 

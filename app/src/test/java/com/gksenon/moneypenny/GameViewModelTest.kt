@@ -1,18 +1,24 @@
 package com.gksenon.moneypenny
 
-import com.gksenon.moneypenny.data.InMemoryAccountant
 import com.gksenon.moneypenny.domain.Accountant
+import com.gksenon.moneypenny.domain.Transaction
 import com.gksenon.moneypenny.viewmodel.GameScreenState
 import com.gksenon.moneypenny.viewmodel.GameViewModel
-import io.mockk.spyk
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.joda.time.Instant
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -22,13 +28,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.util.UUID
 
 private const val STARTING_MONEY = 1500
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GameViewModelTest {
 
-    private val accountant: Accountant = spyk(InMemoryAccountant())
+    private val accountant: Accountant = mockk()
     private val testDispatcher = StandardTestDispatcher()
 
     companion object {
@@ -49,16 +56,26 @@ class GameViewModelTest {
 
         @JvmStatic
         fun provideAddDialogConfirmationArguments() = listOf(
-            Arguments.of("", listOf(STARTING_MONEY), STARTING_MONEY),
-            Arguments.of("999999999", listOf(999999999, STARTING_MONEY), STARTING_MONEY + 999999999),
-            Arguments.of("2500", listOf(2500, STARTING_MONEY), STARTING_MONEY + 2500)
+            Arguments.of("", 0, listOf(STARTING_MONEY), STARTING_MONEY),
+            Arguments.of(
+                "999999999",
+                999999999,
+                listOf(999999999, STARTING_MONEY),
+                STARTING_MONEY + 999999999
+            ),
+            Arguments.of("2500", 2500, listOf(2500, STARTING_MONEY), STARTING_MONEY + 2500)
         )
 
         @JvmStatic
         fun provideSubtractDialogConfirmationArguments() = listOf(
-            Arguments.of("", listOf(STARTING_MONEY), STARTING_MONEY),
-            Arguments.of("999999999", listOf(-999999999, STARTING_MONEY), STARTING_MONEY - 999999999),
-            Arguments.of("2500", listOf(-2500, STARTING_MONEY), STARTING_MONEY - 2500)
+            Arguments.of("", 0, listOf(STARTING_MONEY), STARTING_MONEY),
+            Arguments.of(
+                "999999999",
+                999999999,
+                listOf(-999999999, STARTING_MONEY),
+                STARTING_MONEY - 999999999
+            ),
+            Arguments.of("2500", 2500, listOf(-2500, STARTING_MONEY), STARTING_MONEY - 2500)
         )
     }
 
@@ -74,6 +91,7 @@ class GameViewModelTest {
 
     @Test
     fun gameViewModel_initWithoutStartingMoney_showsStartGameState() = runTest {
+        every { accountant.getTransactionHistory() } returns flowOf(emptyList())
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
 
@@ -84,7 +102,15 @@ class GameViewModelTest {
 
     @Test
     fun gameViewModel_initWithStartingMoney_showsGameInProgressState() = runTest {
-        accountant.startGame(STARTING_MONEY)
+        every { accountant.getTransactionHistory() } returns flowOf(
+            listOf(
+                Transaction(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    STARTING_MONEY
+                )
+            )
+        )
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
 
@@ -101,6 +127,7 @@ class GameViewModelTest {
         input: String,
         expectedOutput: String
     ) = runTest {
+        every { accountant.getTransactionHistory() } returns flowOf(emptyList())
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onStartingMoneyChanged(input)
@@ -112,6 +139,7 @@ class GameViewModelTest {
 
     @Test
     fun gameViewModel_onStartButtonClickedWithInvalidMoney_shouldShowError() = runTest {
+        every { accountant.getTransactionHistory() } returns flowOf(emptyList())
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onStartingMoneyChanged("")
@@ -122,25 +150,41 @@ class GameViewModelTest {
         val state = viewModel.state.value as GameScreenState.GameNotStarted
         assertTrue(state.showStartingMoneyInvalidError)
     }
+
     @Test
     fun gameViewModel_onStartButtonClicked_shouldStartGame() = runTest {
+        val transactionsFlow: MutableStateFlow<List<Transaction>> = MutableStateFlow(emptyList())
+        every { accountant.getTransactionHistory() } returns transactionsFlow
+        coEvery { accountant.startGame(STARTING_MONEY) } returns Unit
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
-        viewModel.onStartingMoneyChanged("1500")
+        viewModel.onStartingMoneyChanged(STARTING_MONEY.toString())
         advanceUntilIdle()
         viewModel.onStartButtonClicked()
         advanceUntilIdle()
 
+        transactionsFlow.value =
+            listOf(Transaction(UUID.randomUUID(), Instant.now(), STARTING_MONEY))
+        advanceUntilIdle()
+
         val state = viewModel.state.value as GameScreenState.GameInProgress
-        assertEquals(1500, state.balance)
+        assertEquals(STARTING_MONEY, state.balance)
         assertFalse(state.showAddMoneyDialog)
         assertFalse(state.showSubtractMoneyDialog)
-        verify { accountant.startGame(1500) }
+        coVerify { accountant.startGame(STARTING_MONEY) }
     }
 
     @Test
     fun gameViewModel_onAddButtonClicked_shouldShowAddDialog() = runTest {
-        accountant.startGame(STARTING_MONEY)
+        every { accountant.getTransactionHistory() } returns flowOf(
+            listOf(
+                Transaction(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    STARTING_MONEY
+                )
+            )
+        )
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onAddButtonClicked()
@@ -153,23 +197,40 @@ class GameViewModelTest {
 
     @ParameterizedTest
     @MethodSource("provideMoneyValueValidationArguments")
-    fun gameViewModel_onMoneyValueChanged_shouldValidateValue(input: String, output: String) = runTest {
-        accountant.startGame(STARTING_MONEY)
-        val viewModel = GameViewModel(accountant)
-        advanceUntilIdle()
-        viewModel.onAddButtonClicked()
-        advanceUntilIdle()
-        viewModel.onMoneyValueChanged(input)
-        advanceUntilIdle()
+    fun gameViewModel_onMoneyValueChanged_shouldValidateValue(input: String, output: String) =
+        runTest {
+            every { accountant.getTransactionHistory() } returns flowOf(
+                listOf(
+                    Transaction(
+                        UUID.randomUUID(),
+                        Instant.now(),
+                        STARTING_MONEY
+                    )
+                )
+            )
+            val viewModel = GameViewModel(accountant)
+            advanceUntilIdle()
+            viewModel.onAddButtonClicked()
+            advanceUntilIdle()
+            viewModel.onMoneyValueChanged(input)
+            advanceUntilIdle()
 
-        val state = viewModel.state.value as GameScreenState.GameInProgress
-        assertEquals(output, state.moneyValue)
-    }
+            val state = viewModel.state.value as GameScreenState.GameInProgress
+            assertEquals(output, state.moneyValue)
+        }
 
     @ParameterizedTest
     @MethodSource("provideAddDialogConfirmationArguments")
-    fun gameViewModel_onAddDialogConfirmed_shouldAddMoney(input: String, transactions: List<Int>, balance: Int) = runTest {
-        accountant.startGame(STARTING_MONEY)
+    fun gameViewModel_onAddDialogConfirmed_shouldAddMoney(
+        input: String,
+        validatedInput: Int,
+        transactions: List<Int>,
+        balance: Int
+    ) = runTest {
+        val transactionsFlow: MutableStateFlow<List<Transaction>> =
+            MutableStateFlow(listOf(Transaction(UUID.randomUUID(), Instant.now(), STARTING_MONEY)))
+        every { accountant.getTransactionHistory() } returns transactionsFlow
+        coEvery { accountant.add(validatedInput) } returns Unit
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onAddButtonClicked()
@@ -179,17 +240,29 @@ class GameViewModelTest {
         viewModel.onAddDialogConfirmed()
         advanceUntilIdle()
 
+        transactionsFlow.value =
+            transactions.map { Transaction(UUID.randomUUID(), Instant.now(), it) }
+        advanceUntilIdle()
+
         val state = viewModel.state.value as GameScreenState.GameInProgress
         assertEquals(balance, state.balance)
         assertFalse(state.showAddMoneyDialog)
         assertFalse(state.showSubtractMoneyDialog)
         assertEquals(transactions, state.transactionHistory)
-//        verify { accountant.add(1000) }
+        coVerify { accountant.add(validatedInput) }
     }
 
     @Test
     fun gameViewModel_onAddDialogDismissed_shouldCloseDialog() = runTest {
-        accountant.startGame(STARTING_MONEY)
+        every { accountant.getTransactionHistory() } returns flowOf(
+            listOf(
+                Transaction(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    STARTING_MONEY
+                )
+            )
+        )
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onAddButtonClicked()
@@ -207,7 +280,15 @@ class GameViewModelTest {
 
     @Test
     fun gameViewModel_onSubtractButtonClicked_shouldShowSubtractDialog() = runTest {
-        accountant.startGame(STARTING_MONEY)
+        every { accountant.getTransactionHistory() } returns flowOf(
+            listOf(
+                Transaction(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    STARTING_MONEY
+                )
+            )
+        )
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onSubtractButtonClicked()
@@ -220,8 +301,16 @@ class GameViewModelTest {
 
     @ParameterizedTest
     @MethodSource("provideSubtractDialogConfirmationArguments")
-    fun gameViewModel_onSubtractDialogConfirmed_shouldSubtractMoney(input: String, transactions: List<Int>, balance: Int) = runTest {
-        accountant.startGame(STARTING_MONEY)
+    fun gameViewModel_onSubtractDialogConfirmed_shouldSubtractMoney(
+        input: String,
+        validatedInput: Int,
+        transactions: List<Int>,
+        balance: Int
+    ) = runTest {
+        val transactionsFlow: MutableStateFlow<List<Transaction>> =
+            MutableStateFlow(listOf(Transaction(UUID.randomUUID(), Instant.now(), STARTING_MONEY)))
+        every { accountant.getTransactionHistory() } returns transactionsFlow
+        coEvery { accountant.subtract(validatedInput) } returns Unit
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onSubtractButtonClicked()
@@ -231,17 +320,29 @@ class GameViewModelTest {
         viewModel.onSubtractDialogConfirmed()
         advanceUntilIdle()
 
+        transactionsFlow.value =
+            transactions.map { Transaction(UUID.randomUUID(), Instant.now(), it) }
+        advanceUntilIdle()
+
         val state = viewModel.state.value as GameScreenState.GameInProgress
         assertEquals(balance, state.balance)
         assertFalse(state.showAddMoneyDialog)
         assertFalse(state.showSubtractMoneyDialog)
         assertEquals(transactions, state.transactionHistory)
-//        verify { accountant.subtract(500) }
+        coVerify { accountant.subtract(validatedInput) }
     }
 
     @Test
     fun gameViewModel_onSubtractDialogDismissed_shouldCloseDialog() = runTest {
-        accountant.startGame(STARTING_MONEY)
+        every { accountant.getTransactionHistory() } returns flowOf(
+            listOf(
+                Transaction(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    STARTING_MONEY
+                )
+            )
+        )
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onSubtractButtonClicked()
@@ -259,14 +360,20 @@ class GameViewModelTest {
 
     @Test
     fun gameViewModel_onFinishGameButtonClicked_shouldFinishGame() = runTest {
-        accountant.startGame(STARTING_MONEY)
+        val transactionsFlow: MutableStateFlow<List<Transaction>> =
+            MutableStateFlow(listOf(Transaction(UUID.randomUUID(), Instant.now(), STARTING_MONEY)))
+        every { accountant.getTransactionHistory() } returns transactionsFlow
+        coEvery { accountant.finishGame() } returns Unit
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
         viewModel.onFinishGameClicked()
         advanceUntilIdle()
 
+        transactionsFlow.value = emptyList()
+        advanceUntilIdle()
+
         val state = viewModel.state.value as GameScreenState.GameNotStarted
         assertEquals("", state.startingMoney)
-        verify { accountant.finishGame() }
+        coVerify { accountant.finishGame() }
     }
 }
