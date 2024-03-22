@@ -3,6 +3,7 @@ package com.gksenon.moneypenny.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gksenon.moneypenny.domain.Accountant
+import com.gksenon.moneypenny.domain.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,120 +11,116 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class GameViewModel @Inject constructor(private val accountant: Accountant) : ViewModel() {
 
-    private val _state = MutableStateFlow<GameScreenState>(GameScreenState.GameNotStarted())
+    private val _state = MutableStateFlow(GameScreenState())
     val state = _state.asStateFlow()
 
     init {
-        accountant.getTransactionHistory().onEach { transactionHistory ->
-            val state = if (transactionHistory.isEmpty()) {
-                GameScreenState.GameNotStarted()
-            } else {
-                GameScreenState.GameInProgress(
-                    balance = transactionHistory.sumOf { it.amount },
-                    transactionHistory = transactionHistory.sortedByDescending { it.time }.map { it.amount }
-                )
+        accountant.getPlayers().onEach { players ->
+            _state.update { previousState ->
+                val playerCards = players.map { player ->
+                    val oldCard =
+                        previousState.playerCards.find { card -> card.player.id == player.id }
+                    if (oldCard != null)
+                        oldCard.copy(player = player)
+                    else {
+                        val red = Random.nextInt(256)
+                        val green = Random.nextInt(256)
+                        val blue = Random.nextInt(256)
+                        PlayerCard(player = player, color = Triple(red, green, blue))
+                    }
+                }
+                GameScreenState(playerCards = playerCards)
             }
-            _state.update { state }
         }.launchIn(viewModelScope)
     }
 
-    fun onStartingMoneyChanged(value: String) {
-        _state.update {
-            val startingMoney = value.filter { it.isDigit() }
-            GameScreenState.GameNotStarted(
-                startingMoney = startingMoney,
-                showStartingMoneyInvalidError = false
-            )
-        }
-    }
-
-    fun onStartButtonClicked() {
-        val currentState = _state.value as GameScreenState.GameNotStarted
-        val startingMoney = currentState.startingMoney.toIntOrNull()
-        if (startingMoney != null) {
-            viewModelScope.launch { accountant.startGame(startingMoney) }
-        } else {
-            _state.update { currentState.copy(showStartingMoneyInvalidError = true) }
-        }
-    }
-
-    fun onAddButtonClicked() {
-        _state.update { currentState ->
-            (currentState as GameScreenState.GameInProgress).copy(showAddMoneyDialog = true)
-        }
-    }
-
-    fun onAddDialogConfirmed() {
-        val currentState = _state.value as GameScreenState.GameInProgress
-        viewModelScope.launch { accountant.add(currentState.moneyValue.toIntOrNull() ?: 0) }
+    fun onSendMoneyButtonClicked() {
         _state.update { previousState ->
-            (previousState as GameScreenState.GameInProgress).copy(
-                showAddMoneyDialog = false,
-                moneyValue = ""
+            previousState.copy(
+                moneyTransferDialogState = MoneyTransferDialogState.Opened(
+                    sender = previousState.playerCards.first().player,
+                    recipient = previousState.playerCards.last().player,
+                    amount = ""
+                )
             )
         }
     }
 
-    fun onAddDialogDismissed() {
-        _state.update { currentState ->
-            (currentState as GameScreenState.GameInProgress).copy(
-                showAddMoneyDialog = false,
-                moneyValue = ""
-            )
-        }
-    }
-
-    fun onSubtractButtonClicked() {
-        _state.update { currentState ->
-            (currentState as GameScreenState.GameInProgress).copy(showSubtractMoneyDialog = true)
-        }
-    }
-
-    fun onSubtractDialogConfirmed() {
-        val currentState = _state.value as GameScreenState.GameInProgress
-        viewModelScope.launch { accountant.subtract(currentState.moneyValue.toIntOrNull() ?: 0) }
+    fun onSenderChanged(id: UUID) {
         _state.update { previousState ->
-            (previousState as GameScreenState.GameInProgress).copy(
-                showSubtractMoneyDialog = false,
-                moneyValue = ""
-            )
+            val players = previousState.playerCards.map { card -> card.player }
+            val dialogState =
+                previousState.moneyTransferDialogState as MoneyTransferDialogState.Opened
+            val sender = players.find { player -> player.id == id } ?: players.first()
+            previousState.copy(moneyTransferDialogState = dialogState.copy(sender = sender))
         }
     }
 
-    fun onSubtractDialogDismissed() {
-        _state.update { currentState ->
-            (currentState as GameScreenState.GameInProgress).copy(showSubtractMoneyDialog = false)
+    fun onRecipientChanged(id: UUID) {
+        _state.update { previousState ->
+            val players = previousState.playerCards.map { card -> card.player }
+            val dialogState =
+                previousState.moneyTransferDialogState as MoneyTransferDialogState.Opened
+            val recipient = players.find { player -> player.id == id } ?: players.last()
+            previousState.copy(moneyTransferDialogState = dialogState.copy(recipient = recipient))
         }
     }
 
-    fun onMoneyValueChanged(value: String) {
-        _state.update { currentState ->
-            val validatedValue = value.filter { it.isDigit() }.take(9)
-            (currentState as GameScreenState.GameInProgress).copy(moneyValue = validatedValue)
+    fun onAmountChanged(value: String) {
+        _state.update { previousState ->
+            val dialogState =
+                previousState.moneyTransferDialogState as MoneyTransferDialogState.Opened
+            val validatedAmount = value.filter { it.isDigit() }.take(9)
+            previousState.copy(moneyTransferDialogState = dialogState.copy(amount = validatedAmount))
         }
     }
 
-    fun onFinishGameClicked() {
+    fun onMoneyTransferDialogConfirmed() {
+        val dialogState =
+            _state.value.moneyTransferDialogState as MoneyTransferDialogState.Opened
+        val senderId = dialogState.sender.id
+        val recipientId = dialogState.recipient.id
+        val amount = dialogState.amount.toIntOrNull() ?: 0
+
+        _state.update { previousState ->
+            previousState.copy(moneyTransferDialogState = MoneyTransferDialogState.Closed)
+        }
+
+        viewModelScope.launch { accountant.sendMoney(senderId, recipientId, amount) }
+    }
+
+    fun onMoneyTransferDialogDismissed() {
+        _state.update { previousState ->
+            previousState.copy(moneyTransferDialogState = MoneyTransferDialogState.Closed)
+        }
+    }
+
+    fun onFinishButtonClicked() {
         viewModelScope.launch { accountant.finishGame() }
     }
 }
 
-sealed class GameScreenState {
-    data class GameNotStarted(
-        val startingMoney: String = "",
-        val showStartingMoneyInvalidError: Boolean = false
-    ) : GameScreenState()
+data class GameScreenState(
+    val playerCards: List<PlayerCard> = emptyList(),
+    val moneyTransferDialogState: MoneyTransferDialogState = MoneyTransferDialogState.Closed
+)
 
-    data class GameInProgress(
-        val balance: Int = 0,
-        val transactionHistory: List<Int> = emptyList(),
-        val showAddMoneyDialog: Boolean = false,
-        val showSubtractMoneyDialog: Boolean = false,
-        val moneyValue: String = ""
-    ) : GameScreenState()
+data class PlayerCard(val player: Player, val color: Triple<Int, Int, Int>)
+
+sealed class MoneyTransferDialogState {
+
+    data object Closed : MoneyTransferDialogState()
+
+    data class Opened(
+        val sender: Player,
+        val recipient: Player,
+        val amount: String
+    ) : MoneyTransferDialogState()
 }

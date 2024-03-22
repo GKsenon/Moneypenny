@@ -4,9 +4,13 @@ import kotlinx.coroutines.flow.Flow
 
 interface AccountantGateway {
 
-    suspend fun writeTransaction(transaction: Transaction)
+    suspend fun savePlayer(player: Player)
 
-    fun readTransactions(): Flow<List<Transaction>>
+    fun getPlayers(): Flow<List<Player>>
+
+    fun getTransactions(): Flow<List<Transaction>>
+
+    suspend fun saveTransaction(transaction: Transaction)
 
     suspend fun clear()
 }

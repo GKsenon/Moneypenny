@@ -15,5 +15,5 @@ interface TransactionsDao {
     fun getTransactions(): Flow<List<TransactionEntity>>
 
     @Query("DELETE FROM transactions")
-    suspend fun clearTransactions()
+    suspend fun clear()
 }

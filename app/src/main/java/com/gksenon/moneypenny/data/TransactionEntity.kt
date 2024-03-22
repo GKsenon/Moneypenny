@@ -9,5 +9,7 @@ import java.util.UUID
 data class TransactionEntity(
     @PrimaryKey val id: UUID,
     val time: Instant,
-    val amount: Int
+    val amount: Int,
+    val senderId: UUID,
+    val recipientId: UUID
 )

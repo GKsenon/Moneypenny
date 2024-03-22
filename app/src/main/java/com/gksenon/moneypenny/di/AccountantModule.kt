@@ -10,16 +10,19 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 class AccountantModule {
 
+    @Singleton
     @Provides
     fun provideAccountant(@ApplicationContext context: Context): Accountant {
         val db = Room.databaseBuilder(context, AccountantDatabase::class.java, "accountant").build()
-        val dao = db.transactionsDao()
-        val gateway = RoomAccountantGateway(dao)
+        val playersDao = db.playersDao()
+        val transactionsDao = db.transactionsDao()
+        val gateway = RoomAccountantGateway(playersDao, transactionsDao)
         return Accountant(gateway)
     }
 }
