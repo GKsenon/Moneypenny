@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -34,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gksenon.moneypenny.R
 import com.gksenon.moneypenny.domain.Player
@@ -82,12 +85,30 @@ fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
                     )
                     val textColor =
                         if (backgroundColor.luminance() > 0.5) Color.Black else Color.White
-                    Card(colors = cardColors(containerColor = backgroundColor)) {
-                        Column(modifier = Modifier.padding(8.dp)) {
+                    Card(
+                        colors = cardColors(containerColor = backgroundColor),
+                        modifier = Modifier.aspectRatio(1f)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp)
+                        ) {
                             val balance =
-                                if (playerCard.player.balance < Int.MAX_VALUE) playerCard.player.balance.toString() else "∞"
-                            Text(text = playerCard.player.name, color = textColor)
-                            Text(text = balance, color = textColor)
+                                if (playerCard.player.balance < Int.MAX_VALUE) "${playerCard.player.balance} \$" else "∞"
+                            Text(
+                                text = playerCard.player.name,
+                                color = textColor,
+                                fontSize = 20.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = balance,
+                                color = textColor,
+                                fontSize = 28.sp,
+                                modifier = Modifier.weight(1.5f)
+                            )
                         }
                     }
                 }
