@@ -41,25 +41,19 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
         }.launchIn(viewModelScope)
     }
 
-    fun onSendMoneyButtonClicked() {
+    fun onPlayerClicked(player: Player) {
         _state.update { previousState ->
+            val availableRecipients = previousState.playerCards
+                .map { card -> card.player }
+                .minus(player)
             previousState.copy(
                 moneyTransferDialogState = MoneyTransferDialogState.Opened(
-                    sender = previousState.playerCards.first().player,
-                    recipient = previousState.playerCards.last().player,
+                    sender = player,
+                    availableRecipients = availableRecipients,
+                    selectedRecipient = availableRecipients.first(),
                     amount = ""
                 )
             )
-        }
-    }
-
-    fun onSenderChanged(id: UUID) {
-        _state.update { previousState ->
-            val players = previousState.playerCards.map { card -> card.player }
-            val dialogState =
-                previousState.moneyTransferDialogState as MoneyTransferDialogState.Opened
-            val sender = players.find { player -> player.id == id } ?: players.first()
-            previousState.copy(moneyTransferDialogState = dialogState.copy(sender = sender))
         }
     }
 
@@ -69,7 +63,7 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
             val dialogState =
                 previousState.moneyTransferDialogState as MoneyTransferDialogState.Opened
             val recipient = players.find { player -> player.id == id } ?: players.last()
-            previousState.copy(moneyTransferDialogState = dialogState.copy(recipient = recipient))
+            previousState.copy(moneyTransferDialogState = dialogState.copy(selectedRecipient = recipient))
         }
     }
 
@@ -86,7 +80,7 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
         val dialogState =
             _state.value.moneyTransferDialogState as MoneyTransferDialogState.Opened
         val senderId = dialogState.sender.id
-        val recipientId = dialogState.recipient.id
+        val recipientId = dialogState.selectedRecipient.id
         val amount = dialogState.amount.toIntOrNull() ?: 0
 
         _state.update { previousState ->
@@ -120,7 +114,8 @@ sealed class MoneyTransferDialogState {
 
     data class Opened(
         val sender: Player,
-        val recipient: Player,
+        val availableRecipients: List<Player>,
+        val selectedRecipient: Player,
         val amount: String
     ) : MoneyTransferDialogState()
 }
