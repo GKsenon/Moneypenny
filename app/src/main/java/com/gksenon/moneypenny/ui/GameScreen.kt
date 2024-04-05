@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gksenon.moneypenny.R
-import com.gksenon.moneypenny.domain.Player
 import com.gksenon.moneypenny.viewmodel.GameViewModel
 import com.gksenon.moneypenny.viewmodel.MoneyTransferDialogState
 import java.util.UUID
@@ -117,11 +116,8 @@ fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
     val dialogState = state.moneyTransferDialogState
     if (dialogState is MoneyTransferDialogState.Opened) {
         SendMoneyDialog(
-            sender = dialogState.sender,
-            availableRecipients = dialogState.availableRecipients,
-            selectedRecipient = dialogState.selectedRecipient,
+            state = dialogState,
             onRecipientChanged = { id -> viewModel.onRecipientChanged(id) },
-            amount = dialogState.amount,
             onAmountChanged = { value -> viewModel.onAmountChanged(value) },
             onDialogConfirmed = { viewModel.onMoneyTransferDialogConfirmed() },
             onDialogDismissed = { viewModel.onMoneyTransferDialogDismissed() }
@@ -131,11 +127,8 @@ fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
 
 @Composable
 fun SendMoneyDialog(
-    sender: Player,
-    availableRecipients: List<Player>,
-    selectedRecipient: Player,
+    state: MoneyTransferDialogState.Opened,
     onRecipientChanged: (UUID) -> Unit,
-    amount: String,
     onAmountChanged: (String) -> Unit,
     onDialogConfirmed: () -> Unit,
     onDialogDismissed: () -> Unit
@@ -153,9 +146,14 @@ fun SendMoneyDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     val selectorOptions =
-                        availableRecipients.map { player -> Option(id = player.id, text = player.name) }
+                        state.availableRecipients.map { player ->
+                            Option(
+                                id = player.id,
+                                text = player.name
+                            )
+                        }
                     Text(
-                        text = sender.name
+                        text = state.sender.name
                     )
                     Icon(
                         imageVector = Icons.Filled.ArrowForward,
@@ -163,13 +161,16 @@ fun SendMoneyDialog(
                     )
                     Selector(
                         options = selectorOptions,
-                        selected = Option(id = selectedRecipient.id, text = selectedRecipient.name),
+                        selected = Option(
+                            id = state.selectedRecipient.id,
+                            text = state.selectedRecipient.name
+                        ),
                         onOptionSelected = onRecipientChanged,
                         modifier = Modifier.weight(1f)
                     )
                 }
                 OutlinedTextField(
-                    value = amount,
+                    value = state.amount,
                     onValueChange = onAmountChanged,
                     label = { Text(text = stringResource(id = R.string.amount_of_money)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -177,7 +178,7 @@ fun SendMoneyDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDialogConfirmed) {
+            TextButton(onClick = onDialogConfirmed, enabled = state.isConfirmButtonEnabled) {
                 Text(text = stringResource(id = android.R.string.ok))
             }
         },

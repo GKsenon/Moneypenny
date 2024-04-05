@@ -51,7 +51,8 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
                     sender = player,
                     availableRecipients = availableRecipients,
                     selectedRecipient = availableRecipients.first(),
-                    amount = ""
+                    amount = "",
+                    isConfirmButtonEnabled = false
                 )
             )
         }
@@ -71,8 +72,15 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
         _state.update { previousState ->
             val dialogState =
                 previousState.moneyTransferDialogState as MoneyTransferDialogState.Opened
-            val validatedAmount = value.filter { it.isDigit() }.take(9)
-            previousState.copy(moneyTransferDialogState = dialogState.copy(amount = validatedAmount))
+            val amountValue = value.filter { it.isDigit() }.take(9)
+            val parsedAmount = amountValue.toIntOrNull()
+            val isAmountValid = parsedAmount != null && parsedAmount > 0
+            previousState.copy(
+                moneyTransferDialogState = dialogState.copy(
+                    amount = amountValue,
+                    isConfirmButtonEnabled = isAmountValid
+                )
+            )
         }
     }
 
@@ -116,6 +124,7 @@ sealed class MoneyTransferDialogState {
         val sender: Player,
         val availableRecipients: List<Player>,
         val selectedRecipient: Player,
-        val amount: String
+        val amount: String,
+        val isConfirmButtonEnabled: Boolean
     ) : MoneyTransferDialogState()
 }
