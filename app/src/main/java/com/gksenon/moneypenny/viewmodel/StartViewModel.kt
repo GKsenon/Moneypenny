@@ -15,9 +15,10 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
 
     private val _state = MutableStateFlow(StartScreenState())
     val state = _state.asStateFlow()
+
     fun onStartingMoneyChanged(value: String) {
         _state.update {
-            val startingMoney = value.filter { c -> c.isDigit() }
+            val startingMoney = value.filter { c -> c.isDigit() }.take(9)
             it.copy(
                 startingMoney = startingMoney,
                 showStartingMoneyInvalidError = false
@@ -44,7 +45,7 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
         val startingMoney = currentState.startingMoney.toIntOrNull()
         val players = currentState.players
         when {
-            startingMoney == null -> _state.update { it.copy(showStartingMoneyInvalidError = true) }
+            startingMoney == null || startingMoney <= 0 -> _state.update { it.copy(showStartingMoneyInvalidError = true) }
             players.isEmpty() -> _state.update { currentState.copy(showPlayersListIsEmptyError = true) }
             else -> {
                 _state.update { StartScreenState() }
