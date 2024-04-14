@@ -163,6 +163,23 @@ fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
             onDialogDismissed = { viewModel.onMoneyTransferDialogDismissed() }
         )
     }
+
+    if (state.showCancelLastTransactionConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onCancelLastTransactionConfirmationDialogDismissed() },
+            title = { Text(text = stringResource(id = R.string.cancel_transaction)) },
+            text = { Text(text = stringResource(id = R.string.confirm_transaction_cancellation)) },
+            confirmButton = {
+                TextButton(onClick = {viewModel.onCancelLastTransactionConfirmationDialogConfirmed()}) {
+                    Text(text = stringResource(id = android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.onCancelLastTransactionConfirmationDialogDismissed() }) {
+                    Text(text = stringResource(id = android.R.string.cancel))
+                }
+            })
+    }
 }
 
 @Composable

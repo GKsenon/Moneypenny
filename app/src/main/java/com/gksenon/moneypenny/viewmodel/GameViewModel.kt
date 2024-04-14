@@ -109,9 +109,18 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
     }
 
     fun onCancelTransactionButtonClicked() {
+        _state.update { previousState -> previousState.copy(showCancelLastTransactionConfirmation = true) }
+    }
+
+    fun onCancelLastTransactionConfirmationDialogConfirmed() {
+        _state.update { previousState -> previousState.copy(showCancelLastTransactionConfirmation = false) }
         val lastTransactionId = _state.value.lastTransaction?.id
         if (lastTransactionId != null)
             viewModelScope.launch { accountant.cancelTransaction(lastTransactionId) }
+    }
+
+    fun onCancelLastTransactionConfirmationDialogDismissed() {
+        _state.update { previousState -> previousState.copy(showCancelLastTransactionConfirmation = false) }
     }
 
     fun onFinishButtonClicked() {
@@ -122,7 +131,8 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
 data class GameScreenState(
     val playerCards: List<PlayerCard> = emptyList(),
     val lastTransaction: Transaction? = null,
-    val moneyTransferDialogState: MoneyTransferDialogState = MoneyTransferDialogState.Closed
+    val moneyTransferDialogState: MoneyTransferDialogState = MoneyTransferDialogState.Closed,
+    val showCancelLastTransactionConfirmation: Boolean = false
 )
 
 data class PlayerCard(val player: Player, val color: Triple<Int, Int, Int>)

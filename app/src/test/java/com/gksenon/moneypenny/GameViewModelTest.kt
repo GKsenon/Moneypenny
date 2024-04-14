@@ -217,7 +217,19 @@ class GameViewModelTest {
     }
 
     @Test
-    fun onCancelLastTransactionButtonClicked_cancelsTransaction() = runTest {
+    fun onCancelLastTransactionButtonClicked_showConfirmationDialog() = runTest {
+        val viewModel = GameViewModel(accountant)
+        advanceUntilIdle()
+
+        viewModel.onCancelTransactionButtonClicked()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state.showCancelLastTransactionConfirmation)
+    }
+
+    @Test
+    fun onCancelLastTransactionConfirmationDialogConfirmed_cancelsTransaction() = runTest {
         val transactionIdSlot = slot<UUID>()
         coEvery { accountant.cancelTransaction(capture(transactionIdSlot)) } returns Unit
         val viewModel = GameViewModel(accountant)
@@ -226,7 +238,27 @@ class GameViewModelTest {
         viewModel.onCancelTransactionButtonClicked()
         advanceUntilIdle()
 
+        viewModel.onCancelLastTransactionConfirmationDialogConfirmed()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertFalse(state.showCancelLastTransactionConfirmation)
         assertEquals(lastTransaction.id, transactionIdSlot.captured)
+    }
+
+    @Test
+    fun onCancelLastTransactionConfirmationDialogDismissed_closesDialog() = runTest {
+        val viewModel = GameViewModel(accountant)
+        advanceUntilIdle()
+
+        viewModel.onCancelTransactionButtonClicked()
+        advanceUntilIdle()
+
+        viewModel.onCancelLastTransactionConfirmationDialogDismissed()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertFalse(state.showCancelLastTransactionConfirmation)
     }
 
     @Test
