@@ -180,6 +180,23 @@ fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
                 }
             })
     }
+
+    if(state.showFinishConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onFinishConfirmationDialogDismissed() },
+            title = { Text(text = stringResource(id = R.string.finish_game)) },
+            text = { Text(text = stringResource(id = R.string.finish_game_confirmation)) },
+            confirmButton = {
+                TextButton(onClick = {viewModel.onFinishConfirmationDialogConfirmed()}) {
+                    Text(text = stringResource(id = android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.onFinishConfirmationDialogDismissed() }) {
+                    Text(text = stringResource(id = android.R.string.cancel))
+                }
+            })
+    }
 }
 
 @Composable

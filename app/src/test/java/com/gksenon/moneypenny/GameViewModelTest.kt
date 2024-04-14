@@ -277,7 +277,19 @@ class GameViewModelTest {
     }
 
     @Test
-    fun onFinishButtonClicked_finishesGame() = runTest {
+    fun onFinishButtonClicked_showsConfirmationDialog() = runTest {
+        val viewModel = GameViewModel(accountant)
+        advanceUntilIdle()
+
+        viewModel.onFinishButtonClicked()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state.showFinishConfirmation)
+    }
+
+    @Test
+    fun onFinishConfirmationDialogConfirmed_finishesGame() = runTest {
         coEvery { accountant.finishGame() } returns Unit
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
@@ -285,7 +297,27 @@ class GameViewModelTest {
         viewModel.onFinishButtonClicked()
         advanceUntilIdle()
 
+        viewModel.onFinishConfirmationDialogConfirmed()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertFalse(state.showFinishConfirmation)
         coVerify { accountant.finishGame() }
+    }
+
+    @Test
+    fun onFinishConfirmationDialogDismissed_closesDialog() = runTest {
+        val viewModel = GameViewModel(accountant)
+        advanceUntilIdle()
+
+        viewModel.onFinishButtonClicked()
+        advanceUntilIdle()
+
+        viewModel.onFinishConfirmationDialogDismissed()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertFalse(state.showFinishConfirmation)
     }
 
     private fun validatePlayerCard(player: Player, card: PlayerCard) {

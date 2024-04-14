@@ -9,6 +9,7 @@
     <string name="expand">Expand</string>
     <string name="amount_of_money">Amount of money</string>
     <string name="finish_game">Finish the game</string>
+    <string name="finish_game_confirmation">Are you sure you want to finish the game?</string>
     <string name="cancel_transaction">Cancel a transaction</string>
     <string name="confirm_transaction_cancellation">Are you sure you want to cancel the last transaction?</string>
 </resources>
