@@ -1,16 +1,38 @@
 package com.gksenon.moneypenny.domain
 
 import kotlinx.coroutines.flow.Flow
+import org.joda.time.Instant
+import java.util.UUID
 
 interface AccountantGateway {
 
-    suspend fun savePlayer(player: Player)
+    suspend fun saveStartingMoney(startingMoney: Int)
 
-    fun getPlayers(): Flow<List<Player>>
+    suspend fun getStartingMoney(): Int
 
-    fun getTransactions(): Flow<List<Transaction>>
+    suspend fun savePlayer(player: PlayerDto)
 
-    suspend fun saveTransaction(transaction: Transaction)
+    suspend fun getPlayer(playerId: UUID): PlayerDto
+
+    fun getPlayers(): Flow<List<PlayerDto>>
+
+    fun getTransactions(): Flow<List<TransactionDto>>
+
+    fun getLastTransaction(): Flow<TransactionDto?>
+
+    suspend fun saveTransaction(transaction: TransactionDto)
+
+    suspend fun deleteTransaction(id: UUID)
 
     suspend fun clear()
 }
+
+data class PlayerDto(val id: UUID, val name: String)
+
+data class TransactionDto(
+    val id: UUID,
+    val time: Instant,
+    val amount: Int,
+    val senderId: UUID,
+    val recipientId: UUID
+)

@@ -2,6 +2,7 @@ package com.gksenon.moneypenny
 
 import com.gksenon.moneypenny.domain.Accountant
 import com.gksenon.moneypenny.domain.Player
+import com.gksenon.moneypenny.domain.Transaction
 import com.gksenon.moneypenny.viewmodel.GameViewModel
 import com.gksenon.moneypenny.viewmodel.MoneyTransferDialogState
 import com.gksenon.moneypenny.viewmodel.PlayerCard
@@ -18,6 +19,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.joda.time.Instant
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -39,8 +41,17 @@ class GameViewModelTest {
         Player(UUID.randomUUID(), "Second", 1500)
     )
     private val playersFlow = MutableStateFlow(players)
+    private val lastTransaction = Transaction(
+        id = UUID.randomUUID(),
+        time = Instant.now(),
+        amount = 200,
+        sender = players[1],
+        recipient = players[2]
+    )
+    private val lastTransactionFlow = MutableStateFlow<Transaction?>(lastTransaction)
     private val accountant: Accountant = mockk {
         every { getPlayers() } returns playersFlow
+        every { getLastTransaction() } returns lastTransactionFlow
     }
 
     companion object {
@@ -67,13 +78,14 @@ class GameViewModelTest {
     }
 
     @Test
-    fun init_generatesColorsForPlayerCards() = runTest {
+    fun init_createsPlayerCardsAndLastTransactionCard() = runTest {
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
 
         val state = viewModel.state.value
         state.playerCards.forEachIndexed { index, card -> validatePlayerCard(players[index], card) }
         assertTrue(state.moneyTransferDialogState is MoneyTransferDialogState.Closed)
+        assertEquals(lastTransaction, state.lastTransaction)
     }
 
     @Test
@@ -183,6 +195,38 @@ class GameViewModelTest {
         assertEquals(sender.id, senderIdSlot.captured)
         assertEquals(recipient.id, recipientIdSlot.captured)
         assertEquals(200, amountSlot.captured)
+    }
+
+    @Test
+    fun onLastTransactionChanged_updatesTransaction() = runTest {
+        val viewModel = GameViewModel(accountant)
+        advanceUntilIdle()
+
+        val newLastTransaction = Transaction(
+            id = UUID.randomUUID(),
+            time = Instant.now(),
+            amount = 200,
+            sender = players[1],
+            recipient = players[2]
+        )
+        lastTransactionFlow.value = newLastTransaction
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(newLastTransaction, state.lastTransaction)
+    }
+
+    @Test
+    fun onCancelLastTransactionButtonClicked_cancelsTransaction() = runTest {
+        val transactionIdSlot = slot<UUID>()
+        coEvery { accountant.cancelTransaction(capture(transactionIdSlot)) } returns Unit
+        val viewModel = GameViewModel(accountant)
+        advanceUntilIdle()
+
+        viewModel.onCancelTransactionButtonClicked()
+        advanceUntilIdle()
+
+        assertEquals(lastTransaction.id, transactionIdSlot.captured)
     }
 
     @Test

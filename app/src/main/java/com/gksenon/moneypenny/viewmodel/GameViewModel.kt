@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gksenon.moneypenny.domain.Accountant
 import com.gksenon.moneypenny.domain.Player
+import com.gksenon.moneypenny.domain.Transaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,8 +37,11 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
                         PlayerCard(player = player, color = Triple(red, green, blue))
                     }
                 }
-                GameScreenState(playerCards = playerCards)
+                previousState.copy(playerCards = playerCards)
             }
+        }.launchIn(viewModelScope)
+        accountant.getLastTransaction().onEach { transaction ->
+            _state.update { previousState -> previousState.copy(lastTransaction = transaction) }
         }.launchIn(viewModelScope)
     }
 
@@ -104,6 +108,12 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
         }
     }
 
+    fun onCancelTransactionButtonClicked() {
+        val lastTransactionId = _state.value.lastTransaction?.id
+        if (lastTransactionId != null)
+            viewModelScope.launch { accountant.cancelTransaction(lastTransactionId) }
+    }
+
     fun onFinishButtonClicked() {
         viewModelScope.launch { accountant.finishGame() }
     }
@@ -111,6 +121,7 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
 
 data class GameScreenState(
     val playerCards: List<PlayerCard> = emptyList(),
+    val lastTransaction: Transaction? = null,
     val moneyTransferDialogState: MoneyTransferDialogState = MoneyTransferDialogState.Closed
 )
 

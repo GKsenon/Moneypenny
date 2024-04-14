@@ -3,7 +3,7 @@ package com.gksenon.moneypenny.di
 import android.content.Context
 import androidx.room.Room
 import com.gksenon.moneypenny.data.AccountantDatabase
-import com.gksenon.moneypenny.data.RoomAccountantGateway
+import com.gksenon.moneypenny.data.AccountantGatewayImpl
 import com.gksenon.moneypenny.domain.Accountant
 import dagger.Module
 import dagger.Provides
@@ -22,7 +22,7 @@ class AccountantModule {
         val db = Room.databaseBuilder(context, AccountantDatabase::class.java, "accountant").build()
         val playersDao = db.playersDao()
         val transactionsDao = db.transactionsDao()
-        val gateway = RoomAccountantGateway(playersDao, transactionsDao)
+        val gateway = AccountantGatewayImpl(context, playersDao, transactionsDao)
         return Accountant(gateway)
     }
 }

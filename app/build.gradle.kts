@@ -73,6 +73,7 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation ("net.danlew:android.joda:2.12.6")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))

@@ -3,12 +3,14 @@ package com.gksenon.moneypenny.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardColors
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -62,10 +65,8 @@ fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
             )
         }
     ) { contentPadding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(count = 2),
-            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Top),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+        Box(
+            contentAlignment = Alignment.BottomCenter,
             modifier = Modifier.padding(
                 top = contentPadding.calculateTopPadding() + 16.dp,
                 start = 16.dp,
@@ -73,40 +74,79 @@ fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
                 end = 16.dp
             )
         ) {
-            items(state.playerCards) { playerCard ->
-                val backgroundColor = Color(
-                    red = playerCard.color.first,
-                    green = playerCard.color.second,
-                    blue = playerCard.color.third
-                )
-                val textColor =
-                    if (backgroundColor.luminance() > 0.5) Color.Black else Color.White
-                Card(
-                    colors = cardColors(containerColor = backgroundColor),
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .clickable { viewModel.onPlayerClicked(playerCard.player) }
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(count = 2),
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Top),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(state.playerCards) { playerCard ->
+                    val backgroundColor = Color(
+                        red = playerCard.color.first,
+                        green = playerCard.color.second,
+                        blue = playerCard.color.third
+                    )
+                    val textColor =
+                        if (backgroundColor.luminance() > 0.5) Color.Black else Color.White
+                    Card(
+                        colors = cardColors(containerColor = backgroundColor),
                         modifier = Modifier
-                            .fillMaxSize()
+                            .aspectRatio(1f)
+                            .clickable { viewModel.onPlayerClicked(playerCard.player) }
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp)
+                        ) {
+                            val balance =
+                                if (playerCard.player.balance < Int.MAX_VALUE) "${playerCard.player.balance} \$" else "∞"
+                            Text(
+                                text = playerCard.player.name,
+                                color = textColor,
+                                fontSize = 20.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = balance,
+                                color = textColor,
+                                fontSize = 28.sp,
+                                modifier = Modifier.weight(1.5f)
+                            )
+                        }
+                    }
+                }
+            }
+            val lastTransaction = state.lastTransaction
+            if (lastTransaction != null) {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .padding(16.dp)
                     ) {
-                        val balance =
-                            if (playerCard.player.balance < Int.MAX_VALUE) "${playerCard.player.balance} \$" else "∞"
-                        Text(
-                            text = playerCard.player.name,
-                            color = textColor,
-                            fontSize = 20.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = balance,
-                            color = textColor,
-                            fontSize = 28.sp,
-                            modifier = Modifier.weight(1.5f)
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "${lastTransaction.sender.name} -> ${lastTransaction.recipient.name}",
+                                fontSize = 20.sp
+                            )
+                            Text(
+                                text = "${lastTransaction.amount} \$",
+                                fontSize = 24.sp
+                            )
+                        }
+                        IconButton(onClick = { viewModel.onCancelTransactionButtonClicked() }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_undo),
+                                contentDescription = stringResource(id = R.string.cancel_transaction),
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
                     }
                 }
             }
