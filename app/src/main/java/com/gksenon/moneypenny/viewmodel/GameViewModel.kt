@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -45,30 +44,14 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
         }.launchIn(viewModelScope)
     }
 
-    fun onPlayerClicked(player: Player) {
+    fun onMoneyTransferRequested(sender: Player, recipient: Player) {
         _state.update { previousState ->
-            val availableRecipients = previousState.playerCards
-                .map { card -> card.player }
-                .minus(player)
             previousState.copy(
                 moneyTransferDialogState = MoneyTransferDialogState.Opened(
-                    sender = player,
-                    availableRecipients = availableRecipients,
-                    selectedRecipient = availableRecipients.first(),
-                    amount = "",
-                    isConfirmButtonEnabled = false
+                    sender = sender,
+                    recipient = recipient
                 )
             )
-        }
-    }
-
-    fun onRecipientChanged(id: UUID) {
-        _state.update { previousState ->
-            val players = previousState.playerCards.map { card -> card.player }
-            val dialogState =
-                previousState.moneyTransferDialogState as MoneyTransferDialogState.Opened
-            val recipient = players.find { player -> player.id == id } ?: players.last()
-            previousState.copy(moneyTransferDialogState = dialogState.copy(selectedRecipient = recipient))
         }
     }
 
@@ -92,7 +75,7 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
         val dialogState =
             _state.value.moneyTransferDialogState as MoneyTransferDialogState.Opened
         val senderId = dialogState.sender.id
-        val recipientId = dialogState.selectedRecipient.id
+        val recipientId = dialogState.recipient.id
         val amount = dialogState.amount.toIntOrNull() ?: 0
 
         _state.update { previousState ->
@@ -153,9 +136,8 @@ sealed class MoneyTransferDialogState {
 
     data class Opened(
         val sender: Player,
-        val availableRecipients: List<Player>,
-        val selectedRecipient: Player,
-        val amount: String,
-        val isConfirmButtonEnabled: Boolean
+        val recipient: Player,
+        val amount: String = "",
+        val isConfirmButtonEnabled: Boolean = false
     ) : MoneyTransferDialogState()
 }

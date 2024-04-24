@@ -23,7 +23,6 @@ import org.joda.time.Instant
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -105,37 +104,21 @@ class GameViewModelTest {
     }
 
     @Test
-    fun onPlayerClicked_showsTransferDialog() = runTest {
+    fun onMoneyTransferRequested_showsTransferDialog() = runTest {
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
 
         val sender = players.first()
-        viewModel.onPlayerClicked(sender)
+        val recipient = players.last()
+        viewModel.onMoneyTransferRequested(sender, recipient)
         advanceUntilIdle()
 
         val dialogState =
             viewModel.state.value.moneyTransferDialogState as MoneyTransferDialogState.Opened
         assertEquals(sender, dialogState.sender)
-        assertEquals(players.minus(sender), dialogState.availableRecipients)
-        assertNotEquals(sender, dialogState.selectedRecipient)
+        assertEquals(recipient, dialogState.recipient)
         assertEquals(dialogState.amount, "")
         assertFalse(dialogState.isConfirmButtonEnabled)
-    }
-
-    @Test
-    fun onRecipientChanged_changesRecipient() = runTest {
-        val viewModel = GameViewModel(accountant)
-        advanceUntilIdle()
-
-        viewModel.onPlayerClicked(players.first())
-        advanceUntilIdle()
-
-        viewModel.onRecipientChanged(players.last().id)
-        advanceUntilIdle()
-
-        val dialogState =
-            viewModel.state.value.moneyTransferDialogState as MoneyTransferDialogState.Opened
-        assertEquals(players.last(), dialogState.selectedRecipient)
     }
 
     @ParameterizedTest
@@ -148,7 +131,7 @@ class GameViewModelTest {
         val viewModel = GameViewModel(accountant)
         advanceUntilIdle()
 
-        viewModel.onPlayerClicked(players.first())
+        viewModel.onMoneyTransferRequested(players.first(), players.last())
         advanceUntilIdle()
 
         viewModel.onAmountChanged(input)
@@ -176,11 +159,8 @@ class GameViewModelTest {
         advanceUntilIdle()
 
         val sender = players.first()
-        viewModel.onPlayerClicked(sender)
-        advanceUntilIdle()
-
         val recipient = players.last()
-        viewModel.onRecipientChanged(recipient.id)
+        viewModel.onMoneyTransferRequested(sender, recipient)
         advanceUntilIdle()
 
         val amount = "200"
@@ -195,6 +175,21 @@ class GameViewModelTest {
         assertEquals(sender.id, senderIdSlot.captured)
         assertEquals(recipient.id, recipientIdSlot.captured)
         assertEquals(200, amountSlot.captured)
+    }
+
+    @Test
+    fun onMoneyTransferDialogDismissed_closesDialog() = runTest {
+        val viewModel = GameViewModel(accountant)
+        advanceUntilIdle()
+
+        viewModel.onMoneyTransferRequested(players.first(), players.last())
+        advanceUntilIdle()
+
+        viewModel.onMoneyTransferDialogDismissed()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(MoneyTransferDialogState.Closed, state.moneyTransferDialogState)
     }
 
     @Test
@@ -259,21 +254,6 @@ class GameViewModelTest {
 
         val state = viewModel.state.value
         assertFalse(state.showCancelLastTransactionConfirmation)
-    }
-
-    @Test
-    fun onMoneyTransferDialogDismissed_closesDialog() = runTest {
-        val viewModel = GameViewModel(accountant)
-        advanceUntilIdle()
-
-        viewModel.onPlayerClicked(players.first())
-        advanceUntilIdle()
-
-        viewModel.onMoneyTransferDialogDismissed()
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertEquals(MoneyTransferDialogState.Closed, state.moneyTransferDialogState)
     }
 
     @Test
