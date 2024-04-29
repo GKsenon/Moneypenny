@@ -52,21 +52,19 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
             OutlinedTextField(
                 value = state.startingMoney,
                 onValueChange = { viewModel.onStartingMoneyChanged(it) },
-                label = {
-                    val label = if (state.showStartingMoneyInvalidError)
-                        R.string.starting_money_is_invalid
-                    else
-                        R.string.starting_money
-                    Text(text = stringResource(id = label))
-                },
+                label = { Text(text = stringResource(id = R.string.starting_money)) },
                 isError = state.showStartingMoneyInvalidError,
+                supportingText = {
+                    if (state.showStartingMoneyInvalidError)
+                        Text(text = stringResource(id = R.string.starting_money_is_invalid))
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = state.playerName,
                 onValueChange = { viewModel.onPlayerNameChanged(it) },
-                label = { Text(text = stringResource(id = R.string.add_player)) },
+                label = { Text(text = stringResource(id = R.string.player)) },
                 trailingIcon = {
                     IconButton(onClick = { viewModel.onAddPlayerButtonClicked() }) {
                         Image(
@@ -74,6 +72,11 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                             contentDescription = stringResource(id = R.string.add_player)
                         )
                     }
+                },
+                isError = state.showPlayerNameIsEmptyError,
+                supportingText = {
+                    if (state.showPlayerNameIsEmptyError)
+                        Text(text = stringResource(id = R.string.player_name_is_empty))
                 },
                 modifier = Modifier.fillMaxWidth()
             )

@@ -3,7 +3,8 @@
     <string name="start_game">Start</string>
     <string name="starting_money">Starting money</string>
     <string name="starting_money_is_invalid">Invalid money amount</string>
-    <string name="player_name">Player`s name</string>
+    <string name="player">Player</string>
+    <string name="player_name_is_empty">The name is empty</string>
     <string name="add_player">Add a player</string>
     <string name="delete_player">Delete a player</string>
     <string name="send_money">Send money</string>

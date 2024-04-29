@@ -76,19 +76,24 @@ class StartViewModelTest {
     }
 
     @Test
-    fun onAddPlayerButtonClicked_ifPlayerNameIsEmpty_doesNothing() = runTest {
+    fun onAddPlayerButtonClicked_ifPlayerNameIsEmpty_showsError() = runTest {
         val viewModel = StartViewModel(accountant)
         advanceUntilIdle()
 
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
 
-        val state = viewModel.state.value
-        assertTrue(state.players.isEmpty())
+        assertTrue(viewModel.state.value.players.isEmpty())
+        assertTrue(viewModel.state.value.showPlayerNameIsEmptyError)
+
+        viewModel.onPlayerNameChanged(PLAYER_NAME)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.showPlayerNameIsEmptyError)
     }
 
     @Test
-    fun onAddPlayerButtonClicked_ifPLayerNameIsNotEmpty_addsPlayer() = runTest {
+    fun onAddPlayerButtonClicked_ifPlayerNameIsNotEmpty_addsPlayer() = runTest {
         val viewModel = StartViewModel(accountant)
         advanceUntilIdle()
 

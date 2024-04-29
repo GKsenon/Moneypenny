@@ -27,7 +27,7 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
     }
 
     fun onPlayerNameChanged(name: String) {
-        _state.update { it.copy(playerName = name) }
+        _state.update { it.copy(playerName = name, showPlayerNameIsEmptyError = false) }
     }
 
     fun onAddPlayerButtonClicked() {
@@ -36,6 +36,10 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
             val players = currentState.players.plus(currentState.playerName)
             _state.update {
                 it.copy(playerName = "", players = players, showPlayersListIsEmptyError = false)
+            }
+        } else {
+            _state.update { previousState ->
+                previousState.copy(showPlayerNameIsEmptyError = true)
             }
         }
     }
@@ -66,6 +70,7 @@ data class StartScreenState(
     val startingMoney: String = "",
     val showStartingMoneyInvalidError: Boolean = false,
     val playerName: String = "",
+    val showPlayerNameIsEmptyError: Boolean = false,
     val players: List<String> = emptyList(),
     val showPlayersListIsEmptyError: Boolean = false
 )
