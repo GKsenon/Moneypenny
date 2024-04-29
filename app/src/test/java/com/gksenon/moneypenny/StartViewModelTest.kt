@@ -22,6 +22,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 
+private const val PLAYER_NAME = "player"
+
 @ExperimentalCoroutinesApi
 class StartViewModelTest {
 
@@ -66,11 +68,11 @@ class StartViewModelTest {
         val viewModel = StartViewModel(accountant)
         advanceUntilIdle()
 
-        viewModel.onPlayerNameChanged("player")
+        viewModel.onPlayerNameChanged(PLAYER_NAME)
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals("player", state.playerName)
+        assertEquals(PLAYER_NAME, state.playerName)
     }
 
     @Test
@@ -90,16 +92,32 @@ class StartViewModelTest {
         val viewModel = StartViewModel(accountant)
         advanceUntilIdle()
 
-        viewModel.onPlayerNameChanged("player")
+        viewModel.onPlayerNameChanged(PLAYER_NAME)
         advanceUntilIdle()
 
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(listOf("player"), state.players)
+        assertEquals(listOf(PLAYER_NAME), state.players)
         assertEquals("", state.playerName)
         assertFalse(state.showPlayersListIsEmptyError)
+    }
+
+    @Test
+    fun onDeletePlayerButtonClicked_deletesPlayer() = runTest {
+        val viewModel = StartViewModel(accountant)
+        advanceUntilIdle()
+        viewModel.onPlayerNameChanged(PLAYER_NAME)
+        advanceUntilIdle()
+        viewModel.onAddPlayerButtonClicked()
+        advanceUntilIdle()
+
+        viewModel.onDeletePlayerButtonClicked(PLAYER_NAME)
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state.players.isEmpty())
     }
 
     @Test
@@ -107,7 +125,7 @@ class StartViewModelTest {
         val viewModel = StartViewModel(accountant)
         advanceUntilIdle()
 
-        viewModel.onPlayerNameChanged("player")
+        viewModel.onPlayerNameChanged(PLAYER_NAME)
         advanceUntilIdle()
 
         viewModel.onAddPlayerButtonClicked()
@@ -146,7 +164,7 @@ class StartViewModelTest {
         val viewModel = StartViewModel(accountant)
         advanceUntilIdle()
 
-        viewModel.onPlayerNameChanged("player")
+        viewModel.onPlayerNameChanged(PLAYER_NAME)
         advanceUntilIdle()
 
         viewModel.onAddPlayerButtonClicked()
@@ -165,6 +183,6 @@ class StartViewModelTest {
         assertFalse(state.showStartingMoneyInvalidError)
         assertFalse(state.showPlayersListIsEmptyError)
         assertEquals(2000, startingMoneySlot.captured)
-        assertEquals(listOf("player"), playersSlot.captured)
+        assertEquals(listOf(PLAYER_NAME), playersSlot.captured)
     }
 }

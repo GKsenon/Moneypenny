@@ -40,6 +40,13 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
         }
     }
 
+    fun onDeletePlayerButtonClicked(playerName: String) {
+        _state.update { previousState ->
+            val players = previousState.players.minus(playerName)
+            previousState.copy(players = players)
+        }
+    }
+
     fun onStartButtonClicked() {
         val currentState = _state.value
         val startingMoney = currentState.startingMoney.toIntOrNull()

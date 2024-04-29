@@ -5,6 +5,7 @@
     <string name="starting_money_is_invalid">Invalid money amount</string>
     <string name="player_name">Player`s name</string>
     <string name="add_player">Add a player</string>
+    <string name="delete_player">Delete a player</string>
     <string name="send_money">Send money</string>
     <string name="expand">Expand</string>
     <string name="amount_of_money">Amount of money</string>
