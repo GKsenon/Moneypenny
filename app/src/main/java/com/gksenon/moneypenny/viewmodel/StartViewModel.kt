@@ -17,11 +17,14 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
     val state = _state.asStateFlow()
 
     fun onStartingMoneyChanged(value: String) {
-        _state.update {
+        _state.update { previousState ->
             val startingMoney = value.filter { c -> c.isDigit() }.take(9)
-            it.copy(
+            val parsedStartingMoney = startingMoney.toIntOrNull() ?: 0
+            val isStartButtonEnabled =
+                accountant.areGameParamsValid(parsedStartingMoney, previousState.players)
+            previousState.copy(
                 startingMoney = startingMoney,
-                showStartingMoneyInvalidError = false
+                isStartButtonEnabled = isStartButtonEnabled
             )
         }
     }
@@ -31,11 +34,17 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
     }
 
     fun onAddPlayerButtonClicked() {
-        val currentState = _state.value
-        if (currentState.playerName.isNotEmpty()) {
-            val players = currentState.players.plus(currentState.playerName)
-            _state.update {
-                it.copy(playerName = "", players = players, showPlayersListIsEmptyError = false)
+        val playerName = _state.value.playerName
+        if (playerName.isNotEmpty()) {
+            _state.update { previousState ->
+                val players = previousState.players.plus(playerName)
+                val startingMoney = previousState.startingMoney.toIntOrNull() ?: 0
+                val isStartButtonEnabled = accountant.areGameParamsValid(startingMoney, players)
+                previousState.copy(
+                    playerName = "",
+                    players = players,
+                    isStartButtonEnabled = isStartButtonEnabled
+                )
             }
         } else {
             _state.update { previousState ->
@@ -47,30 +56,25 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
     fun onDeletePlayerButtonClicked(playerName: String) {
         _state.update { previousState ->
             val players = previousState.players.minus(playerName)
-            previousState.copy(players = players)
+            val startingMoney = previousState.startingMoney.toIntOrNull() ?: 0
+            val isStartButtonEnabled = accountant.areGameParamsValid(startingMoney, players)
+            previousState.copy(players = players, isStartButtonEnabled = isStartButtonEnabled)
         }
     }
 
     fun onStartButtonClicked() {
         val currentState = _state.value
-        val startingMoney = currentState.startingMoney.toIntOrNull()
+        val startingMoney = currentState.startingMoney.toIntOrNull() ?: 0
         val players = currentState.players
-        when {
-            startingMoney == null || startingMoney <= 0 -> _state.update { it.copy(showStartingMoneyInvalidError = true) }
-            players.isEmpty() -> _state.update { currentState.copy(showPlayersListIsEmptyError = true) }
-            else -> {
-                _state.update { StartScreenState() }
-                viewModelScope.launch { accountant.startGame(startingMoney, players) }
-            }
-        }
+        _state.update { StartScreenState() }
+        viewModelScope.launch { accountant.startGame(startingMoney, players) }
     }
 }
 
 data class StartScreenState(
     val startingMoney: String = "",
-    val showStartingMoneyInvalidError: Boolean = false,
     val playerName: String = "",
     val showPlayerNameIsEmptyError: Boolean = false,
     val players: List<String> = emptyList(),
-    val showPlayersListIsEmptyError: Boolean = false
+    val isStartButtonEnabled: Boolean = false
 )

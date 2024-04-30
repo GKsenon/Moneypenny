@@ -12,8 +12,10 @@ class Accountant(private val gateway: AccountantGateway) {
 
     val isGameStarted = gateway.getPlayers().map { it.isNotEmpty() }
 
+    fun areGameParamsValid(startingMoney: Int, players: List<String>) = startingMoney > 0 && players.size in 2 .. 8
+
     suspend fun startGame(startingMoney: Int, players: List<String>) {
-        if (startingMoney != 0 && players.isNotEmpty()) {
+        if (areGameParamsValid(startingMoney, players)) {
             gateway.saveStartingMoney(startingMoney)
             gateway.savePlayer(PlayerDto(id = bankId, name = "Bank"))
             players.forEach {

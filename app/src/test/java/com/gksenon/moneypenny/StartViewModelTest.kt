@@ -3,6 +3,7 @@ package com.gksenon.moneypenny
 import com.gksenon.moneypenny.domain.Accountant
 import com.gksenon.moneypenny.viewmodel.StartViewModel
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
@@ -22,12 +23,15 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 
-private const val PLAYER_NAME = "player"
+private const val PLAYER_1 = "player_1"
+private const val PLAYER_2 = "player_2"
 
 @ExperimentalCoroutinesApi
 class StartViewModelTest {
 
-    private val accountant: Accountant = mockk()
+    private val accountant: Accountant = mockk() {
+        every { areGameParamsValid(any(), any()) } returns false
+    }
 
     companion object {
 
@@ -50,134 +54,178 @@ class StartViewModelTest {
         Dispatchers.resetMain()
     }
 
-    @ParameterizedTest
-    @MethodSource("provideStartingMoney")
-    fun onStartingMoneyChanged_validatesStartingMoney(input: String, expectedOutput: String) = runTest {
+    @Test
+    fun init_showsEmptyState() = runTest {
         val viewModel = StartViewModel(accountant)
         advanceUntilIdle()
 
-        viewModel.onStartingMoneyChanged(input)
+        val state = viewModel.state.value
+        assertTrue(state.startingMoney.isEmpty())
+        assertTrue(state.playerName.isEmpty())
+        assertTrue(state.players.isEmpty())
+        assertFalse(state.showPlayerNameIsEmptyError)
+        assertFalse(state.isStartButtonEnabled)
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideStartingMoney")
+    fun onStartingMoneyChanged_validatesStartingMoney(input: String, expectedOutput: String) =
+        runTest {
+            val viewModel = StartViewModel(accountant)
+            viewModel.onStartingMoneyChanged(input)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals(expectedOutput, state.startingMoney)
+        }
+
+    @Test
+    fun onStartingMoneyChanged_ifGameParamsAreValid_enablesStartButton() = runTest {
+        every { accountant.areGameParamsValid(any(), any()) } returns true
+        val viewModel = StartViewModel(accountant)
+        viewModel.onStartingMoneyChanged("2000")
         advanceUntilIdle()
 
-        val state = viewModel.state.value
-        assertEquals(expectedOutput, state.startingMoney)
+        assertTrue(viewModel.state.value.isStartButtonEnabled)
+    }
+
+    @Test
+    fun onStartingMoneyChanged_ifGameParamsAreInvalid_disablesStartButton() = runTest {
+        val viewModel = StartViewModel(accountant)
+        viewModel.onStartingMoneyChanged("2000")
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.isStartButtonEnabled)
     }
 
     @Test
     fun onPlayerNameChanged_changesPlayer() = runTest {
         val viewModel = StartViewModel(accountant)
-        advanceUntilIdle()
-
-        viewModel.onPlayerNameChanged(PLAYER_NAME)
+        viewModel.onPlayerNameChanged(PLAYER_1)
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(PLAYER_NAME, state.playerName)
+        assertEquals(PLAYER_1, state.playerName)
+    }
+
+    @Test
+    fun onPlayerNameChanged_ifErrorIsShown_hidesError() = runTest {
+        val viewModel = StartViewModel(accountant)
+        viewModel.onAddPlayerButtonClicked()
+        advanceUntilIdle()
+
+        val stateWithError = viewModel.state.value
+        assertTrue(stateWithError.showPlayerNameIsEmptyError)
+
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        advanceUntilIdle()
+
+        val stateWithoutError = viewModel.state.value
+        assertFalse(stateWithoutError.showPlayerNameIsEmptyError)
     }
 
     @Test
     fun onAddPlayerButtonClicked_ifPlayerNameIsEmpty_showsError() = runTest {
         val viewModel = StartViewModel(accountant)
-        advanceUntilIdle()
-
-        viewModel.onAddPlayerButtonClicked()
-        advanceUntilIdle()
-
-        assertTrue(viewModel.state.value.players.isEmpty())
-        assertTrue(viewModel.state.value.showPlayerNameIsEmptyError)
-
-        viewModel.onPlayerNameChanged(PLAYER_NAME)
-        advanceUntilIdle()
-
-        assertFalse(viewModel.state.value.showPlayerNameIsEmptyError)
-    }
-
-    @Test
-    fun onAddPlayerButtonClicked_ifPlayerNameIsNotEmpty_addsPlayer() = runTest {
-        val viewModel = StartViewModel(accountant)
-        advanceUntilIdle()
-
-        viewModel.onPlayerNameChanged(PLAYER_NAME)
-        advanceUntilIdle()
-
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(listOf(PLAYER_NAME), state.players)
-        assertEquals("", state.playerName)
-        assertFalse(state.showPlayersListIsEmptyError)
+        assertTrue(state.players.isEmpty())
+        assertTrue(state.showPlayerNameIsEmptyError)
+    }
+
+    @Test
+    fun onAddPlayerButtonClicked_ifPlayerNameIsValid_addsPlayer() = runTest {
+        val viewModel = StartViewModel(accountant)
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        viewModel.onAddPlayerButtonClicked()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(listOf(PLAYER_1), state.players)
+        assertTrue(state.playerName.isEmpty())
+    }
+
+    @Test
+    fun onAddPlayerButtonClicked_ifGameParamsAreValid_enablesStartButton() = runTest {
+        every { accountant.areGameParamsValid(any(), any()) } returns true
+        val viewModel = StartViewModel(accountant)
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        viewModel.onAddPlayerButtonClicked()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state.isStartButtonEnabled)
+    }
+
+    @Test
+    fun onAddPlayerButtonClicked_ifGameParamsAreInvalid_disablesStartButton() = runTest {
+        val viewModel = StartViewModel(accountant)
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        viewModel.onAddPlayerButtonClicked()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertFalse(state.isStartButtonEnabled)
     }
 
     @Test
     fun onDeletePlayerButtonClicked_deletesPlayer() = runTest {
         val viewModel = StartViewModel(accountant)
-        advanceUntilIdle()
-        viewModel.onPlayerNameChanged(PLAYER_NAME)
-        advanceUntilIdle()
+        viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
-        advanceUntilIdle()
-
-        viewModel.onDeletePlayerButtonClicked(PLAYER_NAME)
+        viewModel.onPlayerNameChanged(PLAYER_2)
+        viewModel.onAddPlayerButtonClicked()
+        viewModel.onDeletePlayerButtonClicked(PLAYER_1)
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertTrue(state.players.isEmpty())
+        assertEquals(listOf(PLAYER_2), state.players)
+        assertFalse(state.isStartButtonEnabled)
     }
 
     @Test
-    fun onStartButtonClicked_ifStartingMoneyIsInvalid_showsError() = runTest {
+    fun onDeletePlayerButtonClicked_ifGameParamsAreValid_enablesStartButton() = runTest {
+        every { accountant.areGameParamsValid(any(), any()) } returns true
         val viewModel = StartViewModel(accountant)
-        advanceUntilIdle()
-
-        viewModel.onPlayerNameChanged(PLAYER_NAME)
-        advanceUntilIdle()
-
+        viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
-        advanceUntilIdle()
-
-        viewModel.onStartingMoneyChanged("0")
-        advanceUntilIdle()
-
-        viewModel.onStartButtonClicked()
+        viewModel.onDeletePlayerButtonClicked(PLAYER_1)
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertTrue(state.showStartingMoneyInvalidError)
+        assertTrue(state.isStartButtonEnabled)
     }
 
     @Test
-    fun onStartButtonClicked_ifPlayersListIsEmpty_showsError() = runTest {
+    fun onDeletePlayerButtonClicked_ifGameParamsAreInvalid_disablesStartButton() = runTest {
         val viewModel = StartViewModel(accountant)
-        advanceUntilIdle()
-
-        viewModel.onStartingMoneyChanged("2000")
-        advanceUntilIdle()
-
-        viewModel.onStartButtonClicked()
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        viewModel.onAddPlayerButtonClicked()
+        viewModel.onDeletePlayerButtonClicked(PLAYER_1)
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertTrue(state.showPlayersListIsEmptyError)
+        assertFalse(state.isStartButtonEnabled)
     }
 
     @Test
     fun onStartButtonClicked_startsGame() = runTest {
         val startingMoneySlot = slot<Int>()
         val playersSlot = slot<List<String>>()
-        coEvery { accountant.startGame(capture(startingMoneySlot), capture(playersSlot)) } returns Unit
+        coEvery {
+            accountant.startGame(
+                capture(startingMoneySlot),
+                capture(playersSlot)
+            )
+        } returns Unit
         val viewModel = StartViewModel(accountant)
-        advanceUntilIdle()
-
-        viewModel.onPlayerNameChanged(PLAYER_NAME)
-        advanceUntilIdle()
-
+        viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
-        advanceUntilIdle()
-
+        viewModel.onPlayerNameChanged(PLAYER_2)
+        viewModel.onAddPlayerButtonClicked()
         viewModel.onStartingMoneyChanged("2000")
-        advanceUntilIdle()
-
         viewModel.onStartButtonClicked()
         advanceUntilIdle()
 
@@ -185,9 +233,9 @@ class StartViewModelTest {
         assertTrue(state.startingMoney.isEmpty())
         assertTrue(state.playerName.isEmpty())
         assertTrue(state.players.isEmpty())
-        assertFalse(state.showStartingMoneyInvalidError)
-        assertFalse(state.showPlayersListIsEmptyError)
+        assertFalse(state.showPlayerNameIsEmptyError)
+        assertFalse(state.isStartButtonEnabled)
         assertEquals(2000, startingMoneySlot.captured)
-        assertEquals(listOf(PLAYER_NAME), playersSlot.captured)
+        assertEquals(listOf(PLAYER_1, PLAYER_2), playersSlot.captured)
     }
 }

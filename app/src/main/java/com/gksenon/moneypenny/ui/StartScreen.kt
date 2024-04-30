@@ -53,11 +53,6 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                 value = state.startingMoney,
                 onValueChange = { viewModel.onStartingMoneyChanged(it) },
                 label = { Text(text = stringResource(id = R.string.starting_money)) },
-                isError = state.showStartingMoneyInvalidError,
-                supportingText = {
-                    if (state.showStartingMoneyInvalidError)
-                        Text(text = stringResource(id = R.string.starting_money_is_invalid))
-                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -103,7 +98,9 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                 }
             }
             Button(
-                onClick = { viewModel.onStartButtonClicked() }, modifier = Modifier.fillMaxWidth()
+                onClick = { viewModel.onStartButtonClicked() },
+                enabled = state.isStartButtonEnabled,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = stringResource(id = R.string.start_game))
             }
