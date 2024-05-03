@@ -236,7 +236,7 @@ private fun PlayersGrid(
                         colors = cardColors(containerColor = backgroundColor),
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1f)
+                            .aspectRatio(1.5f)
                             .onGloballyPositioned { coordinates ->
                                 cardSize = coordinates.size
                                 val position = coordinates.positionInRoot() - gridPosition
