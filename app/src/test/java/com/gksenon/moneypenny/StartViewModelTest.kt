@@ -1,6 +1,7 @@
 package com.gksenon.moneypenny
 
 import com.gksenon.moneypenny.domain.Accountant
+import com.gksenon.moneypenny.domain.GameParamsValidationStatus
 import com.gksenon.moneypenny.viewmodel.StartViewModel
 import io.mockk.coEvery
 import io.mockk.every
@@ -29,8 +30,8 @@ private const val PLAYER_2 = "player_2"
 @ExperimentalCoroutinesApi
 class StartViewModelTest {
 
-    private val accountant: Accountant = mockk() {
-        every { areGameParamsValid(any(), any()) } returns false
+    private val accountant: Accountant = mockk {
+        every { validateGameParams(any(), any()) } returns GameParamsValidationStatus.VALID
     }
 
     companion object {
@@ -64,6 +65,7 @@ class StartViewModelTest {
         assertTrue(state.playerName.isEmpty())
         assertTrue(state.players.isEmpty())
         assertFalse(state.showPlayerNameIsEmptyError)
+        assertFalse(state.showPlayerNameMustBeUniqueError)
         assertFalse(state.isStartButtonEnabled)
     }
 
@@ -81,7 +83,6 @@ class StartViewModelTest {
 
     @Test
     fun onStartingMoneyChanged_ifGameParamsAreValid_enablesStartButton() = runTest {
-        every { accountant.areGameParamsValid(any(), any()) } returns true
         val viewModel = StartViewModel(accountant)
         viewModel.onStartingMoneyChanged("2000")
         advanceUntilIdle()
@@ -91,6 +92,7 @@ class StartViewModelTest {
 
     @Test
     fun onStartingMoneyChanged_ifGameParamsAreInvalid_disablesStartButton() = runTest {
+        every { accountant.validateGameParams(any(), any()) } returns GameParamsValidationStatus.STARTING_MONEY_IS_INVALID
         val viewModel = StartViewModel(accountant)
         viewModel.onStartingMoneyChanged("2000")
         advanceUntilIdle()
@@ -109,19 +111,37 @@ class StartViewModelTest {
     }
 
     @Test
-    fun onPlayerNameChanged_ifErrorIsShown_hidesError() = runTest {
+    fun onPlayerNameChanged_ifPlayerNameIsEmptyErrorIsShown_hidesError() = runTest {
         val viewModel = StartViewModel(accountant)
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
 
-        val stateWithError = viewModel.state.value
-        assertTrue(stateWithError.showPlayerNameIsEmptyError)
+        assertTrue(viewModel.state.value.showPlayerNameIsEmptyError)
 
         viewModel.onPlayerNameChanged(PLAYER_1)
         advanceUntilIdle()
 
-        val stateWithoutError = viewModel.state.value
-        assertFalse(stateWithoutError.showPlayerNameIsEmptyError)
+        assertFalse(viewModel.state.value.showPlayerNameIsEmptyError)
+    }
+
+    @Test
+    fun onPlayerNameChanged_ifPlayerMustBeUniqueErrorShown_hidesError() = runTest {
+        val viewModel = StartViewModel(accountant)
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        viewModel.onAddPlayerButtonClicked()
+
+        every { accountant.validateGameParams(any(), any()) } returns GameParamsValidationStatus.PLAYERS_NOT_UNIQUE
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        viewModel.onAddPlayerButtonClicked()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.state.value.showPlayerNameMustBeUniqueError)
+
+        every { accountant.validateGameParams(any(), any()) } returns GameParamsValidationStatus.VALID
+        viewModel.onPlayerNameChanged(PLAYER_2)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.showPlayerNameMustBeUniqueError)
     }
 
     @Test
@@ -133,6 +153,23 @@ class StartViewModelTest {
         val state = viewModel.state.value
         assertTrue(state.players.isEmpty())
         assertTrue(state.showPlayerNameIsEmptyError)
+    }
+
+    @Test
+    fun onAddPlayerButtonClicked_ifPlayerIsDuplicate_showsError() = runTest {
+        val viewModel = StartViewModel(accountant)
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        viewModel.onAddPlayerButtonClicked()
+
+        every { accountant.validateGameParams(any(), any()) } returns GameParamsValidationStatus.PLAYERS_NOT_UNIQUE
+
+        viewModel.onPlayerNameChanged(PLAYER_1)
+        viewModel.onAddPlayerButtonClicked()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(listOf(PLAYER_1), state.players)
+        assertTrue(state.showPlayerNameMustBeUniqueError)
     }
 
     @Test
@@ -149,7 +186,7 @@ class StartViewModelTest {
 
     @Test
     fun onAddPlayerButtonClicked_ifGameParamsAreValid_enablesStartButton() = runTest {
-        every { accountant.areGameParamsValid(any(), any()) } returns true
+//        every { accountant.areGameParamsValid(any(), any()) } returns true
         val viewModel = StartViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
@@ -161,6 +198,7 @@ class StartViewModelTest {
 
     @Test
     fun onAddPlayerButtonClicked_ifGameParamsAreInvalid_disablesStartButton() = runTest {
+        every { accountant.validateGameParams(any(), any()) } returns GameParamsValidationStatus.PLAYERS_AMOUNT_IS_INVALID
         val viewModel = StartViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
@@ -182,12 +220,11 @@ class StartViewModelTest {
 
         val state = viewModel.state.value
         assertEquals(listOf(PLAYER_2), state.players)
-        assertFalse(state.isStartButtonEnabled)
     }
 
     @Test
     fun onDeletePlayerButtonClicked_ifGameParamsAreValid_enablesStartButton() = runTest {
-        every { accountant.areGameParamsValid(any(), any()) } returns true
+//        every { accountant.areGameParamsValid(any(), any()) } returns true
         val viewModel = StartViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
@@ -200,6 +237,7 @@ class StartViewModelTest {
 
     @Test
     fun onDeletePlayerButtonClicked_ifGameParamsAreInvalid_disablesStartButton() = runTest {
+        every { accountant.validateGameParams(any(), any()) } returns GameParamsValidationStatus.PLAYERS_AMOUNT_IS_INVALID
         val viewModel = StartViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()

@@ -3,6 +3,7 @@ package com.gksenon.moneypenny.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gksenon.moneypenny.domain.Accountant
+import com.gksenon.moneypenny.domain.GameParamsValidationStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,35 +21,51 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
         _state.update { previousState ->
             val startingMoney = value.filter { c -> c.isDigit() }.take(9)
             val parsedStartingMoney = startingMoney.toIntOrNull() ?: 0
-            val isStartButtonEnabled =
-                accountant.areGameParamsValid(parsedStartingMoney, previousState.players)
+            val validationStatus =
+                accountant.validateGameParams(parsedStartingMoney, previousState.players)
             previousState.copy(
                 startingMoney = startingMoney,
-                isStartButtonEnabled = isStartButtonEnabled
+                isStartButtonEnabled = validationStatus == GameParamsValidationStatus.VALID
             )
         }
     }
 
     fun onPlayerNameChanged(name: String) {
-        _state.update { it.copy(playerName = name, showPlayerNameIsEmptyError = false) }
+        _state.update {
+            it.copy(
+                playerName = name,
+                showPlayerNameIsEmptyError = false,
+                showPlayerNameMustBeUniqueError = false
+            )
+        }
     }
 
     fun onAddPlayerButtonClicked() {
+        val startingMoney = _state.value.startingMoney.toIntOrNull() ?: 0
         val playerName = _state.value.playerName
-        if (playerName.isNotEmpty()) {
-            _state.update { previousState ->
-                val players = previousState.players.plus(playerName)
-                val startingMoney = previousState.startingMoney.toIntOrNull() ?: 0
-                val isStartButtonEnabled = accountant.areGameParamsValid(startingMoney, players)
-                previousState.copy(
-                    playerName = "",
-                    players = players,
-                    isStartButtonEnabled = isStartButtonEnabled
-                )
+        val players = _state.value.players.plus(playerName)
+        val validationStatus = accountant.validateGameParams(startingMoney, players)
+        when {
+            playerName.isEmpty() -> {
+                _state.update { previousState ->
+                    previousState.copy(showPlayerNameIsEmptyError = true)
+                }
             }
-        } else {
-            _state.update { previousState ->
-                previousState.copy(showPlayerNameIsEmptyError = true)
+
+            validationStatus == GameParamsValidationStatus.PLAYERS_NOT_UNIQUE -> {
+                _state.update { previousState ->
+                    previousState.copy(showPlayerNameMustBeUniqueError = true)
+                }
+            }
+
+            else -> {
+                _state.update { previousState ->
+                    previousState.copy(
+                        playerName = "",
+                        players = players,
+                        isStartButtonEnabled = validationStatus == GameParamsValidationStatus.VALID
+                    )
+                }
             }
         }
     }
@@ -57,8 +74,11 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
         _state.update { previousState ->
             val players = previousState.players.minus(playerName)
             val startingMoney = previousState.startingMoney.toIntOrNull() ?: 0
-            val isStartButtonEnabled = accountant.areGameParamsValid(startingMoney, players)
-            previousState.copy(players = players, isStartButtonEnabled = isStartButtonEnabled)
+            val validationStatus = accountant.validateGameParams(startingMoney, players)
+            previousState.copy(
+                players = players,
+                isStartButtonEnabled = validationStatus == GameParamsValidationStatus.VALID
+            )
         }
     }
 
@@ -75,6 +95,7 @@ data class StartScreenState(
     val startingMoney: String = "",
     val playerName: String = "",
     val showPlayerNameIsEmptyError: Boolean = false,
+    val showPlayerNameMustBeUniqueError: Boolean = false,
     val players: List<String> = emptyList(),
     val isStartButtonEnabled: Boolean = false
 )

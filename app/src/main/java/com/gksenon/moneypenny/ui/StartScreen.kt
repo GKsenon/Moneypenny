@@ -68,10 +68,12 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                         )
                     }
                 },
-                isError = state.showPlayerNameIsEmptyError,
+                isError = state.showPlayerNameIsEmptyError || state.showPlayerNameMustBeUniqueError,
                 supportingText = {
                     if (state.showPlayerNameIsEmptyError)
                         Text(text = stringResource(id = R.string.player_name_is_empty))
+                    else if(state.showPlayerNameMustBeUniqueError)
+                        Text(text = stringResource(id = R.string.player_name_must_be_unique))
                 },
                 modifier = Modifier.fillMaxWidth()
             )
