@@ -26,12 +26,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gksenon.moneypenny.R
-//import com.gksenon.moneypenny.viewmodel.MainScreenState
 import com.gksenon.moneypenny.viewmodel.StartViewModel
 
 @Composable
@@ -49,17 +51,21 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                 end = 16.dp
             )
         ) {
+            val startingMoneyLabel = stringResource(id = R.string.starting_money)
             OutlinedTextField(
                 value = state.startingMoney,
                 onValueChange = { viewModel.onStartingMoneyChanged(it) },
-                label = { Text(text = stringResource(id = R.string.starting_money)) },
+                label = { Text(text = startingMoneyLabel) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = startingMoneyLabel }
             )
+            val playerNameLabel = stringResource(id = R.string.player)
             OutlinedTextField(
                 value = state.playerName,
                 onValueChange = { viewModel.onPlayerNameChanged(it) },
-                label = { Text(text = stringResource(id = R.string.player)) },
+                label = { Text(text = playerNameLabel) },
                 trailingIcon = {
                     IconButton(onClick = { viewModel.onAddPlayerButtonClicked() }) {
                         Image(
@@ -72,17 +78,24 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                 supportingText = {
                     if (state.showPlayerNameIsEmptyError)
                         Text(text = stringResource(id = R.string.player_name_is_empty))
-                    else if(state.showPlayerNameMustBeUniqueError)
+                    else if (state.showPlayerNameMustBeUniqueError)
                         Text(text = stringResource(id = R.string.player_name_must_be_unique))
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = playerNameLabel }
             )
-            LazyColumn(modifier = Modifier.weight(1f)) {
+            val playerNamesListContentDescription = stringResource(id = R.string.players_names)
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = playerNamesListContentDescription }
+            ) {
                 items(state.players) { playerName ->
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag(playerName)
                     ) {
                         Text(
                             text = playerName,

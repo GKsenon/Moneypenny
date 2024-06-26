@@ -12,19 +12,21 @@ class Accountant(private val gateway: AccountantGateway) {
 
     val isGameStarted = gateway.getPlayers().map { it.isNotEmpty() }
 
-    fun validateGameParams(startingMoney: Int, players: List<String>): GameParamsValidationStatus =
+    fun validateGameParams(
+        startingMoney: Int,
+        players: List<String>
+    ): List<GameParamsValidationError> = buildList {
         if (startingMoney <= 0)
-            GameParamsValidationStatus.STARTING_MONEY_IS_INVALID
-        else if (players.size !in 2..8)
-            GameParamsValidationStatus.PLAYERS_AMOUNT_IS_INVALID
-        else if (players.toSet().size != players.size)
-            GameParamsValidationStatus.PLAYERS_NOT_UNIQUE
-        else
-            GameParamsValidationStatus.VALID
+            add(GameParamsValidationError.STARTING_MONEY_IS_INVALID)
+        if (players.size !in 2..8)
+            add(GameParamsValidationError.PLAYERS_AMOUNT_IS_INVALID)
+        if (players.toSet().size != players.size)
+            add(GameParamsValidationError.PLAYERS_NOT_UNIQUE)
+    }
 
     suspend fun startGame(startingMoney: Int, players: List<String>) {
-        val gameParamsValidationStatus = validateGameParams(startingMoney, players)
-        if (gameParamsValidationStatus == GameParamsValidationStatus.VALID) {
+        val gameParamsValidationErrors = validateGameParams(startingMoney, players)
+        if (gameParamsValidationErrors.isEmpty()) {
             gateway.saveStartingMoney(startingMoney)
             gateway.savePlayer(PlayerDto(id = bankId, name = "Bank"))
             players.forEach {
@@ -100,6 +102,6 @@ data class Transaction(
     val recipient: Player
 )
 
-enum class GameParamsValidationStatus {
-    VALID, STARTING_MONEY_IS_INVALID, PLAYERS_AMOUNT_IS_INVALID, PLAYERS_NOT_UNIQUE
+enum class GameParamsValidationError {
+    STARTING_MONEY_IS_INVALID, PLAYERS_AMOUNT_IS_INVALID, PLAYERS_NOT_UNIQUE
 }

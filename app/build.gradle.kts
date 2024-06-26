@@ -54,7 +54,14 @@ android {
     }
     packaging {
         resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE.md,LICENSE-notice.md}"
+        }
+    }
+    testOptions {
+        packaging {
+            jniLibs {
+                useLegacyPackaging = true
+            }
         }
     }
 }
@@ -63,6 +70,7 @@ dependencies {
 
     val hiltVersion = "2.48"
     val roomVersion = "2.6.1"
+    val androidXTestVersion = "1.5.0"
 
     kapt("com.google.dagger:hilt-android-compiler:$hiltVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
@@ -89,11 +97,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("io.mockk:mockk:1.12.8")
 
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
+    androidTestImplementation("androidx.test:rules:$androidXTestVersion")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.05.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
