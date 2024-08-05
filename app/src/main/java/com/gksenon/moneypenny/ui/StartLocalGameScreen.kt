@@ -34,10 +34,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gksenon.moneypenny.R
-import com.gksenon.moneypenny.viewmodel.StartViewModel
+import com.gksenon.moneypenny.viewmodel.StartLocalGameViewModel
 
 @Composable
-fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
+fun StartScreen(
+    viewModel: StartLocalGameViewModel = hiltViewModel()
+) {
     val state by viewModel.state.collectAsState()
 
     Scaffold(
@@ -85,7 +87,8 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                     .fillMaxWidth()
                     .semantics { contentDescription = playerNameLabel }
             )
-            val playerNamesListContentDescription = stringResource(id = R.string.players_names)
+            val playerNamesListContentDescription =
+                stringResource(id = R.string.players_names_list_content_description)
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -95,7 +98,9 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().testTag(playerName)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(playerName)
                     ) {
                         Text(
                             text = playerName,
@@ -117,7 +122,7 @@ fun StartScreen(viewModel: StartViewModel = hiltViewModel()) {
                 enabled = state.isStartButtonEnabled,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = stringResource(id = R.string.start_game))
+                Text(text = stringResource(id = R.string.start_local))
             }
         }
     }

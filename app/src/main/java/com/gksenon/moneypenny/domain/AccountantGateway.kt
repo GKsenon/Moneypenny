@@ -26,13 +26,3 @@ interface AccountantGateway {
 
     suspend fun clear()
 }
-
-data class PlayerDto(val id: UUID, val name: String)
-
-data class TransactionDto(
-    val id: UUID,
-    val time: Instant,
-    val amount: Int,
-    val senderId: UUID,
-    val recipientId: UUID
-)

@@ -2,8 +2,8 @@ package com.gksenon.moneypenny.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gksenon.moneypenny.domain.Accountant
 import com.gksenon.moneypenny.domain.GameParamsValidationError
+import com.gksenon.moneypenny.domain.LocalMatchMaker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class StartViewModel @Inject constructor(private val accountant: Accountant) : ViewModel() {
+class StartLocalGameViewModel @Inject constructor(private val matchMaker: LocalMatchMaker) :
+    ViewModel() {
 
     private val _state = MutableStateFlow(StartScreenState())
     val state = _state.asStateFlow()
@@ -22,7 +23,7 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
             val startingMoney = value.filter { c -> c.isDigit() }.take(9)
             val parsedStartingMoney = startingMoney.toIntOrNull() ?: 0
             val validationErrors =
-                accountant.validateGameParams(parsedStartingMoney, previousState.players)
+                matchMaker.validateGameParams(parsedStartingMoney, previousState.players)
             previousState.copy(
                 startingMoney = startingMoney,
                 isStartButtonEnabled = validationErrors.isEmpty()
@@ -44,7 +45,7 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
         val startingMoney = _state.value.startingMoney.toIntOrNull() ?: 0
         val playerName = _state.value.playerName
         val players = _state.value.players.plus(playerName)
-        val validationErrors = accountant.validateGameParams(startingMoney, players)
+        val validationErrors = matchMaker.validateGameParams(startingMoney, players)
         when {
             playerName.isEmpty() -> {
                 _state.update { previousState ->
@@ -74,7 +75,7 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
         _state.update { previousState ->
             val players = previousState.players.minus(playerName)
             val startingMoney = previousState.startingMoney.toIntOrNull() ?: 0
-            val validationErrors = accountant.validateGameParams(startingMoney, players)
+            val validationErrors = matchMaker.validateGameParams(startingMoney, players)
             previousState.copy(
                 players = players,
                 isStartButtonEnabled = validationErrors.isEmpty()
@@ -87,7 +88,7 @@ class StartViewModel @Inject constructor(private val accountant: Accountant) : V
         val startingMoney = currentState.startingMoney.toIntOrNull() ?: 0
         val players = currentState.players
         _state.update { StartScreenState() }
-        viewModelScope.launch { accountant.startGame(startingMoney, players) }
+        viewModelScope.launch { matchMaker.startGame(startingMoney, players) }
     }
 }
 

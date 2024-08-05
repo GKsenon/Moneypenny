@@ -90,6 +90,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation ("net.danlew:android.joda:2.12.6")
     implementation("androidx.profileinstaller:profileinstaller:1.3.1")
+    implementation("com.google.android.gms:play-services-nearby:19.3.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")

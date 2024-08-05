@@ -2,7 +2,7 @@ package com.gksenon.moneypenny
 
 import com.gksenon.moneypenny.domain.Accountant
 import com.gksenon.moneypenny.domain.GameParamsValidationError
-import com.gksenon.moneypenny.viewmodel.StartViewModel
+import com.gksenon.moneypenny.viewmodel.StartLocalGameViewModel
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -28,7 +28,7 @@ private const val PLAYER_1 = "player_1"
 private const val PLAYER_2 = "player_2"
 
 @ExperimentalCoroutinesApi
-class StartViewModelTest {
+class StartLocalGameViewModelTest {
 
     private val accountant: Accountant = mockk {
         every {
@@ -65,7 +65,7 @@ class StartViewModelTest {
 
     @Test
     fun init_showsEmptyState() = runTest {
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -81,7 +81,7 @@ class StartViewModelTest {
     @MethodSource("provideStartingMoney")
     fun onStartingMoneyChanged_validatesStartingMoney(input: String, expectedOutput: String) =
         runTest {
-            val viewModel = StartViewModel(accountant)
+            val viewModel = StartLocalGameViewModel(accountant)
             viewModel.onStartingMoneyChanged(input)
             advanceUntilIdle()
 
@@ -92,7 +92,7 @@ class StartViewModelTest {
     @Test
     fun onStartingMoneyChanged_ifGameParamsAreValid_enablesStartButton() = runTest {
         every { accountant.validateGameParams(any(), any()) } returns emptyList()
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onStartingMoneyChanged("2000")
         advanceUntilIdle()
 
@@ -104,7 +104,7 @@ class StartViewModelTest {
         every { accountant.validateGameParams(any(), any()) } returns listOf(
             GameParamsValidationError.STARTING_MONEY_IS_INVALID
         )
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onStartingMoneyChanged("2000")
         advanceUntilIdle()
 
@@ -113,7 +113,7 @@ class StartViewModelTest {
 
     @Test
     fun onPlayerNameChanged_changesPlayer() = runTest {
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         advanceUntilIdle()
 
@@ -123,7 +123,7 @@ class StartViewModelTest {
 
     @Test
     fun onPlayerNameChanged_ifPlayerNameIsEmptyErrorIsShown_hidesError() = runTest {
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
 
@@ -137,7 +137,7 @@ class StartViewModelTest {
 
     @Test
     fun onPlayerNameChanged_ifPlayerMustBeUniqueErrorShown_hidesError() = runTest {
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
 
@@ -159,7 +159,7 @@ class StartViewModelTest {
 
     @Test
     fun onAddPlayerButtonClicked_ifPlayerNameIsEmpty_showsError() = runTest {
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
 
@@ -170,7 +170,7 @@ class StartViewModelTest {
 
     @Test
     fun onAddPlayerButtonClicked_ifPlayerIsDuplicate_showsError() = runTest {
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
 
@@ -192,7 +192,7 @@ class StartViewModelTest {
 
     @Test
     fun onAddPlayerButtonClicked_ifPlayerNameIsValid_addsPlayer() = runTest {
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
@@ -205,7 +205,7 @@ class StartViewModelTest {
     @Test
     fun onAddPlayerButtonClicked_ifGameParamsAreValid_enablesStartButton() = runTest {
         every { accountant.validateGameParams(any(), any()) } returns emptyList()
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
@@ -220,7 +220,7 @@ class StartViewModelTest {
             accountant.validateGameParams(any(), any())
         } returns
                 listOf(GameParamsValidationError.PLAYERS_AMOUNT_IS_INVALID)
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
         advanceUntilIdle()
@@ -231,7 +231,7 @@ class StartViewModelTest {
 
     @Test
     fun onDeletePlayerButtonClicked_deletesPlayer() = runTest {
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
         viewModel.onPlayerNameChanged(PLAYER_2)
@@ -246,7 +246,7 @@ class StartViewModelTest {
     @Test
     fun onDeletePlayerButtonClicked_ifGameParamsAreValid_enablesStartButton() = runTest {
         every { accountant.validateGameParams(any(), any()) } returns emptyList()
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
         viewModel.onDeletePlayerButtonClicked(PLAYER_1)
@@ -264,7 +264,7 @@ class StartViewModelTest {
                 any()
             )
         } returns listOf(GameParamsValidationError.PLAYERS_AMOUNT_IS_INVALID)
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
         viewModel.onDeletePlayerButtonClicked(PLAYER_1)
@@ -284,7 +284,7 @@ class StartViewModelTest {
                 capture(playersSlot)
             )
         } returns Unit
-        val viewModel = StartViewModel(accountant)
+        val viewModel = StartLocalGameViewModel(accountant)
         viewModel.onPlayerNameChanged(PLAYER_1)
         viewModel.onAddPlayerButtonClicked()
         viewModel.onPlayerNameChanged(PLAYER_2)

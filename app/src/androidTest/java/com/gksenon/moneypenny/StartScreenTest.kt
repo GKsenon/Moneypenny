@@ -21,7 +21,7 @@ import androidx.compose.ui.test.performTextInput
 import com.gksenon.moneypenny.domain.Accountant
 import com.gksenon.moneypenny.ui.StartScreen
 import com.gksenon.moneypenny.ui.theme.MoneypennyTheme
-import com.gksenon.moneypenny.viewmodel.StartViewModel
+import com.gksenon.moneypenny.viewmodel.StartLocalGameViewModel
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -53,13 +53,13 @@ class StartScreenTest {
     fun before() {
         composeTestRule.setContent {
             MoneypennyTheme {
-                StartScreen(viewModel = StartViewModel(Accountant(accountantGateway)))
+                StartScreen(viewModel = StartLocalGameViewModel(Accountant(accountantGateway)))
             }
             val startingMoneyContentDescription = stringResource(R.string.starting_money)
             val playerNameContentDescription = stringResource(R.string.player)
             val addPlayerButtonContentDescription = stringResource(R.string.add_player)
-            val playersListContentDescription = stringResource(R.string.players_names)
-            val startButtonText = stringResource(R.string.start_game)
+            val playersListContentDescription = stringResource(R.string.players_names_list_content_description)
+            val startButtonText = stringResource(R.string.start_local)
             nameIsEmptyError = stringResource(id = R.string.player_name_is_empty)
             nameIsDuplicateError = stringResource(id = R.string.player_name_must_be_unique)
             deletePlayerButtonContentDescription = stringResource(id = R.string.delete_player)
