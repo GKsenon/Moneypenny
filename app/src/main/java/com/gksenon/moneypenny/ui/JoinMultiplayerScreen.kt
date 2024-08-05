@@ -24,12 +24,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gksenon.moneypenny.R
 import com.gksenon.moneypenny.viewmodel.JoinMultiplayerScreenState
 import com.gksenon.moneypenny.viewmodel.JoinMultiplayerViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun JoinMultiplayerScreen(viewModel: JoinMultiplayerViewModel = hiltViewModel()) {
     Scaffold(
@@ -47,21 +51,47 @@ fun JoinMultiplayerScreen(viewModel: JoinMultiplayerViewModel = hiltViewModel())
                     end = 16.dp
                 )
         ) {
-            val state by viewModel.state.collectAsState()
-            when (state) {
-                is JoinMultiplayerScreenState.PlayerNameRequested ->
-                    PlayerNameRequestedScreen(
-                        state = state as JoinMultiplayerScreenState.PlayerNameRequested,
-                        onNameChanged = { viewModel.onNameChanged(it) },
-                        onNameConfirmed = { viewModel.onNameConfirmed() }
-                    )
+            val permissions = buildList {
+                add(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    add(android.Manifest.permission.BLUETOOTH_ADVERTISE)
+                    add(android.Manifest.permission.BLUETOOTH_CONNECT)
+                    add(android.Manifest.permission.BLUETOOTH_SCAN)
+                }
+            }
+            val permissionState = rememberMultiplePermissionsState(permissions)
+            if (!permissionState.allPermissionsGranted) {
+                PermissionsRequiredScreen(requestPermissions = { permissionState.launchMultiplePermissionRequest() })
+            } else {
+                val state by viewModel.state.collectAsState()
+                when (state) {
+                    is JoinMultiplayerScreenState.PlayerNameRequested ->
+                        PlayerNameRequestedScreen(
+                            state = state as JoinMultiplayerScreenState.PlayerNameRequested,
+                            onNameChanged = { viewModel.onNameChanged(it) },
+                            onNameConfirmed = { viewModel.onNameConfirmed() }
+                        )
 
-                JoinMultiplayerScreenState.DiscoveryStarted -> DiscoveryScreen()
-                JoinMultiplayerScreenState.ConnectingToHost -> ConnectingScreen()
-                JoinMultiplayerScreenState.AcceptedByHost -> AcceptedScreen()
-                JoinMultiplayerScreenState.RejectedByHost -> RejectedScreen(onTryAgainButtonClicked = { viewModel.onTryAgainButtonClicked() })
+                    JoinMultiplayerScreenState.DiscoveryStarted -> DiscoveryScreen()
+                    JoinMultiplayerScreenState.ConnectingToHost -> ConnectingScreen()
+                    JoinMultiplayerScreenState.AcceptedByHost -> AcceptedScreen()
+                    JoinMultiplayerScreenState.RejectedByHost -> RejectedScreen(
+                        onTryAgainButtonClicked = { viewModel.onTryAgainButtonClicked() })
+                }
             }
         }
+    }
+}
+
+@Composable
+fun PermissionsRequiredScreen(requestPermissions: () -> Unit) {
+    Text(
+        text = stringResource(id = R.string.join_multiplayer_permission_request_rationale),
+        textAlign = TextAlign.Center
+    )
+    Button(onClick = requestPermissions) {
+        Text(text = stringResource(id = R.string.request_permissions))
     }
 }
 

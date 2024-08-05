@@ -11,6 +11,9 @@
     <string name="players_names_list_content_description">Players\' names</string>
     <string name="delete_player">Delete a player</string>
     <string name="start">Start</string>
+    <string name="join_multiplayer_permission_request_rationale">Location and Bluetooth permissions are required to join a multiplayer game. Please grant the permissions.</string>
+    <string name="host_multiplayer_permission_request_rationale">Location and Bluetooth permissions are required to start a multiplayer game. Please grant the permissions.</string>
+    <string name="request_permissions">Request the permissions</string>
     <string name="your_name">Your name</string>
     <string name="connection_requests">Connection requests:</string>
     <string name="accept_player_content_description">Accept a player</string>
