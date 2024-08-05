@@ -15,7 +15,7 @@ import javax.inject.Inject
 class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostMatchMaker) :
     ViewModel() {
 
-    private val _state = MutableStateFlow(StartMultiplayerScreenState())
+    private val _state = MutableStateFlow(HostMultiplayerScreenState())
     val state = _state.asStateFlow()
 
     init {
@@ -43,12 +43,15 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
                 previousState.copy(connections = newConnections)
             }
         }.launchIn(viewModelScope)
-        matchMaker.startAdvertising()
     }
 
     override fun onCleared() {
         super.onCleared()
         matchMaker.reset()
+    }
+
+    fun onPermissionsGranted() {
+        matchMaker.startAdvertising()
     }
 
     fun onHostNameChanged(value: String) {
@@ -83,7 +86,7 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
     }
 }
 
-data class StartMultiplayerScreenState(
+data class HostMultiplayerScreenState(
     val hostName: String = "",
     val startingMoney: String = "",
     val connections: List<ClientConnection> = emptyList(),
