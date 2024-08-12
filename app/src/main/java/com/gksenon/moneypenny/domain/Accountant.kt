@@ -1,5 +1,6 @@
 package com.gksenon.moneypenny.domain
 
+import com.gksenon.moneypenny.domain.dto.PlayerDto
 import com.gksenon.moneypenny.domain.dto.TransactionDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -10,7 +11,7 @@ import java.util.UUID
 val BANK_ID = UUID.nameUUIDFromBytes("Bank".toByteArray()).toString()
 
 
-class Accountant(private val gateway: AccountantGateway) {
+class Accountant(private val gateway: Gateway) {
 
     val isGameStarted = gateway.getPlayers().map { it.isNotEmpty() }
 
@@ -51,13 +52,16 @@ class Accountant(private val gateway: AccountantGateway) {
         transaction?.let {
             val sender = gateway.getPlayer(it.senderId)
             val recipient = gateway.getPlayer(it.recipientId)
-            Transaction(
-                id = it.id,
-                time = it.time,
-                amount = it.amount,
-                sender = Player(id = sender.id, name = sender.name, balance = 0),
-                recipient = Player(id = recipient.id, name = recipient.name, balance = 0)
-            )
+            if (sender != null && recipient != null)
+                Transaction(
+                    id = it.id,
+                    time = it.time,
+                    amount = it.amount,
+                    sender = Player(id = sender.id, name = sender.name, balance = 0),
+                    recipient = Player(id = recipient.id, name = recipient.name, balance = 0)
+                )
+            else
+                null
         }
     }
 
@@ -67,6 +71,25 @@ class Accountant(private val gateway: AccountantGateway) {
 
     suspend fun finishGame() {
         gateway.clear()
+    }
+
+    interface Gateway {
+
+        fun getStartingMoney(): Int
+
+        fun getPlayer(playerId: String): PlayerDto?
+
+        fun getPlayers(): Flow<List<PlayerDto>>
+
+        fun getTransactions(): Flow<List<TransactionDto>>
+
+        fun getLastTransaction(): Flow<TransactionDto?>
+
+        suspend fun saveTransaction(transaction: TransactionDto)
+
+        suspend fun deleteTransaction(id: String)
+
+        suspend fun clear()
     }
 }
 

@@ -1,7 +1,7 @@
 package com.gksenon.moneypenny.di
 
 import android.content.Context
-import com.gksenon.moneypenny.data.InMemoryLocalMatchMakerGateway
+import com.gksenon.moneypenny.data.InMemoryGameRepository
 import com.gksenon.moneypenny.data.NearbyClientMatchMakerGateway
 import com.gksenon.moneypenny.data.NearbyHostMatchMakerGateway
 import com.gksenon.moneypenny.domain.ClientMatchMaker
@@ -27,8 +27,8 @@ class MatchMakerModule {
 
     @Provides
     @Singleton
-    fun provideLocalMatchMaker(): LocalMatchMaker =
-        LocalMatchMaker(InMemoryLocalMatchMakerGateway())
+    fun provideLocalMatchMaker(gameRepository: InMemoryGameRepository): LocalMatchMaker =
+        LocalMatchMaker(gameRepository)
 
     @Provides
     @Singleton

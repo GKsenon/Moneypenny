@@ -69,11 +69,9 @@ android {
 dependencies {
 
     val hiltVersion = "2.48"
-    val roomVersion = "2.6.1"
     val androidXTestVersion = "1.5.0"
 
     kapt("com.google.dagger:hilt-android-compiler:$hiltVersion")
-    kapt("androidx.room:room-compiler:$roomVersion")
     implementation("com.google.dagger:hilt-android:$hiltVersion")
     implementation("androidx.core:core-ktx:1.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
@@ -85,9 +83,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.navigation:navigation-compose:2.7.6")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
-    implementation("androidx.room:room-runtime:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation ("net.danlew:android.joda:2.12.6")
     implementation("androidx.profileinstaller:profileinstaller:1.3.1")
     implementation("com.google.android.gms:play-services-nearby:19.3.0")

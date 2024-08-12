@@ -1,7 +1,6 @@
 package com.gksenon.moneypenny.di
 
 import com.gksenon.moneypenny.data.InMemoryGameRepository
-import com.gksenon.moneypenny.domain.Accountant
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,10 +9,9 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-class AccountantModule {
+class RepositoryModule {
 
-    @Singleton
     @Provides
-    fun provideAccountant(gameRepository: InMemoryGameRepository): Accountant =
-        Accountant(gameRepository)
+    @Singleton
+    fun provideGameRepository() = InMemoryGameRepository()
 }
