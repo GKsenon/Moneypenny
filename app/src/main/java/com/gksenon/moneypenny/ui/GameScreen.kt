@@ -58,7 +58,10 @@ import com.gksenon.moneypenny.viewmodel.MoneyTransferDialogState
 import com.gksenon.moneypenny.viewmodel.PlayerCard
 
 @Composable
-fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
+fun GameScreen(
+    viewModel: GameViewModel = hiltViewModel(),
+    onNavigateToMainScreen: () -> Unit
+) {
     val state by viewModel.state.collectAsState()
 
     Scaffold(
@@ -136,7 +139,7 @@ fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
             title = { Text(text = stringResource(id = R.string.finish_game)) },
             text = { Text(text = stringResource(id = R.string.finish_game_confirmation)) },
             confirmButton = {
-                TextButton(onClick = { viewModel.onFinishConfirmationDialogConfirmed() }) {
+                TextButton(onClick = { viewModel.onFinishConfirmationDialogConfirmed(openMainScreen = onNavigateToMainScreen) }) {
                     Text(text = stringResource(id = android.R.string.ok))
                 }
             },

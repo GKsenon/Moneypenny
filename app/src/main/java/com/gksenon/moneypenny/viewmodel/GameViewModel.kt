@@ -110,9 +110,10 @@ class GameViewModel @Inject constructor(private val accountant: Accountant) : Vi
         _state.update { previousState -> previousState.copy(showFinishConfirmation = true) }
     }
 
-    fun onFinishConfirmationDialogConfirmed() {
+    fun onFinishConfirmationDialogConfirmed(openMainScreen: () -> Unit) {
         _state.update { previousState -> previousState.copy(showFinishConfirmation = false) }
         viewModelScope.launch { accountant.finishGame() }
+        openMainScreen()
     }
 
     fun onFinishConfirmationDialogDismissed() {

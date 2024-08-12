@@ -83,12 +83,13 @@ class StartLocalGameViewModel @Inject constructor(private val matchMaker: LocalM
         }
     }
 
-    fun onStartButtonClicked() {
+    fun onStartButtonClicked(openGameScreen: () -> Unit) {
         val currentState = _state.value
         val startingMoney = currentState.startingMoney.toIntOrNull() ?: 0
         val players = currentState.players
         _state.update { StartScreenState() }
         viewModelScope.launch { matchMaker.startGame(startingMoney, players) }
+        openGameScreen()
     }
 }
 

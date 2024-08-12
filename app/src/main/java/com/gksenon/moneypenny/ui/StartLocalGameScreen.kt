@@ -38,7 +38,8 @@ import com.gksenon.moneypenny.viewmodel.StartLocalGameViewModel
 
 @Composable
 fun StartScreen(
-    viewModel: StartLocalGameViewModel = hiltViewModel()
+    viewModel: StartLocalGameViewModel = hiltViewModel(),
+    onNavigateToGameScreen: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -118,7 +119,7 @@ fun StartScreen(
                 }
             }
             Button(
-                onClick = { viewModel.onStartButtonClicked() },
+                onClick = { viewModel.onStartButtonClicked(openGameScreen = onNavigateToGameScreen) },
                 enabled = state.isStartButtonEnabled,
                 modifier = Modifier.fillMaxWidth()
             ) {
