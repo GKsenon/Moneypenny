@@ -1,46 +1,24 @@
 package com.gksenon.moneypenny.domain
 
+import com.gksenon.moneypenny.domain.dto.TransactionDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import org.joda.time.Instant
 import java.util.UUID
 
+val BANK_ID = UUID.nameUUIDFromBytes("Bank".toByteArray()).toString()
+
+
 class Accountant(private val gateway: AccountantGateway) {
 
-    private val bankId = UUID.nameUUIDFromBytes("Bank".toByteArray())
-
     val isGameStarted = gateway.getPlayers().map { it.isNotEmpty() }
-
-    fun validateGameParams(
-        startingMoney: Int,
-        players: List<String>
-    ): List<GameParamsValidationError> = buildList {
-        if (startingMoney <= 0)
-            add(GameParamsValidationError.STARTING_MONEY_IS_INVALID)
-        if (players.size !in 2..8)
-            add(GameParamsValidationError.PLAYERS_AMOUNT_IS_INVALID)
-        if (players.toSet().size != players.size)
-            add(GameParamsValidationError.PLAYERS_NOT_UNIQUE)
-    }
-
-    suspend fun startGame(startingMoney: Int, players: List<String>) {
-        val gameParamsValidationErrors = validateGameParams(startingMoney, players)
-        if (gameParamsValidationErrors.isEmpty()) {
-            gateway.saveStartingMoney(startingMoney)
-            gateway.savePlayer(PlayerDto(id = bankId, name = "Bank"))
-            players.forEach {
-                val player = PlayerDto(id = UUID.randomUUID(), name = it)
-                gateway.savePlayer(player)
-            }
-        }
-    }
 
     fun getPlayers(): Flow<List<Player>> = gateway.getPlayers()
         .combine(gateway.getTransactions()) { players, transactions ->
             val startingMoney = gateway.getStartingMoney()
             players.map { player ->
-                if (player.id == bankId) {
+                if (player.id == BANK_ID) {
                     Player(id = player.id, name = player.name, balance = Int.MAX_VALUE)
                 } else {
                     val income = transactions
@@ -58,9 +36,9 @@ class Accountant(private val gateway: AccountantGateway) {
             }
         }
 
-    suspend fun sendMoney(senderId: UUID, recipientId: UUID, amount: Int) {
+    suspend fun sendMoney(senderId: String, recipientId: String, amount: Int) {
         val transaction = TransactionDto(
-            id = UUID.randomUUID(),
+            id = UUID.randomUUID().toString(),
             time = Instant.now(),
             amount = amount,
             senderId = senderId,
@@ -83,7 +61,7 @@ class Accountant(private val gateway: AccountantGateway) {
         }
     }
 
-    suspend fun cancelTransaction(transactionId: UUID) {
+    suspend fun cancelTransaction(transactionId: String) {
         gateway.deleteTransaction(transactionId)
     }
 
@@ -92,10 +70,10 @@ class Accountant(private val gateway: AccountantGateway) {
     }
 }
 
-data class Player(val id: UUID, val name: String, val balance: Int)
+data class Player(val id: String, val name: String, val balance: Int)
 
 data class Transaction(
-    val id: UUID,
+    val id: String,
     val time: Instant,
     val amount: Int,
     val sender: Player,

@@ -1,12 +1,11 @@
-package com.gksenon.moneypenny.data
+package com.gksenon.moneypenny.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.util.UUID
 
 @Entity(tableName = "players")
 data class PlayerEntity(
     @PrimaryKey
-    val id: UUID,
+    val id: String,
     val name: String
 )

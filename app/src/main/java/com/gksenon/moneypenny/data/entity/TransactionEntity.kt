@@ -1,15 +1,14 @@
-package com.gksenon.moneypenny.data
+package com.gksenon.moneypenny.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import org.joda.time.Instant
-import java.util.UUID
 
 @Entity(tableName = "transactions")
 data class TransactionEntity(
-    @PrimaryKey val id: UUID,
+    @PrimaryKey val id: String,
     val time: Instant,
     val amount: Int,
-    val senderId: UUID,
-    val recipientId: UUID
+    val senderId: String,
+    val recipientId: String
 )

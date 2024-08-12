@@ -1,8 +1,8 @@
 package com.gksenon.moneypenny.domain
 
+import com.gksenon.moneypenny.domain.dto.PlayerDto
+import com.gksenon.moneypenny.domain.dto.TransactionDto
 import kotlinx.coroutines.flow.Flow
-import org.joda.time.Instant
-import java.util.UUID
 
 interface AccountantGateway {
 
@@ -12,7 +12,7 @@ interface AccountantGateway {
 
     suspend fun savePlayer(player: PlayerDto)
 
-    suspend fun getPlayer(playerId: UUID): PlayerDto
+    suspend fun getPlayer(playerId: String): PlayerDto
 
     fun getPlayers(): Flow<List<PlayerDto>>
 
@@ -22,7 +22,7 @@ interface AccountantGateway {
 
     suspend fun saveTransaction(transaction: TransactionDto)
 
-    suspend fun deleteTransaction(id: UUID)
+    suspend fun deleteTransaction(id: String)
 
     suspend fun clear()
 }

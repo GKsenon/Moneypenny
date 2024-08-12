@@ -1,8 +1,8 @@
 package com.gksenon.moneypenny
 
 import com.gksenon.moneypenny.domain.AccountantGateway
-import com.gksenon.moneypenny.domain.PlayerDto
-import com.gksenon.moneypenny.domain.TransactionDto
+import com.gksenon.moneypenny.domain.dto.PlayerDto
+import com.gksenon.moneypenny.domain.dto.TransactionDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map

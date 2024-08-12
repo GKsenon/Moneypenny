@@ -1,10 +1,10 @@
-package com.gksenon.moneypenny.data
+package com.gksenon.moneypenny.data.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import com.gksenon.moneypenny.data.entity.PlayerEntity
 import kotlinx.coroutines.flow.Flow
-import java.util.UUID
 
 @Dao
 interface PlayersDao {
@@ -16,7 +16,7 @@ interface PlayersDao {
     fun getPlayers(): Flow<List<PlayerEntity>>
 
     @Query("SELECT * FROM players WHERE id = :id")
-    fun getPlayer(id: UUID): PlayerEntity
+    fun getPlayer(id: String): PlayerEntity
 
     @Query("DELETE FROM players")
     fun clear()

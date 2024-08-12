@@ -1,7 +1,7 @@
 package com.gksenon.moneypenny.data
 
 import com.gksenon.moneypenny.domain.LocalMatchMaker
-import com.gksenon.moneypenny.domain.PlayerDto
+import com.gksenon.moneypenny.domain.dto.PlayerDto
 
 class InMemoryLocalMatchMakerGateway: LocalMatchMaker.Gateway {
 

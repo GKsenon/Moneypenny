@@ -6,16 +6,18 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.gksenon.moneypenny.data.dao.PlayersDao
+import com.gksenon.moneypenny.data.dao.TransactionsDao
+import com.gksenon.moneypenny.data.entity.PlayerEntity
+import com.gksenon.moneypenny.data.entity.TransactionEntity
 import com.gksenon.moneypenny.domain.AccountantGateway
-import com.gksenon.moneypenny.domain.PlayerDto
-import com.gksenon.moneypenny.domain.TransactionDto
+import com.gksenon.moneypenny.domain.dto.PlayerDto
+import com.gksenon.moneypenny.domain.dto.TransactionDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.withContext
-import java.util.UUID
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "game_session_params")
 
@@ -42,7 +44,7 @@ class AccountantGatewayImpl(
         playersDao.savePlayer(PlayerEntity(player.id, player.name))
     }
 
-    override suspend fun getPlayer(playerId: UUID): PlayerDto {
+    override suspend fun getPlayer(playerId: String): PlayerDto {
         val playerEntity = withContext(Dispatchers.IO) { playersDao.getPlayer(playerId) }
         return PlayerDto(playerEntity.id, playerEntity.name)
     }
@@ -84,7 +86,7 @@ class AccountantGatewayImpl(
             }
         }
 
-    override suspend fun deleteTransaction(id: UUID) = withContext(Dispatchers.IO) {
+    override suspend fun deleteTransaction(id: String) = withContext(Dispatchers.IO) {
         transactionsDao.deleteTransaction(id)
     }
 

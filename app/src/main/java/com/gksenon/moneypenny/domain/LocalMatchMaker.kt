@@ -1,10 +1,11 @@
 package com.gksenon.moneypenny.domain
 
+import com.gksenon.moneypenny.domain.dto.PlayerDto
 import java.util.UUID
 
 class LocalMatchMaker(private val gateway: Gateway) {
 
-    private val bankId = UUID.nameUUIDFromBytes("Bank".toByteArray())
+    private val bankId = UUID.nameUUIDFromBytes("Bank".toByteArray()).toString()
 
     fun validateGameParams(
         startingMoney: Int,
@@ -24,7 +25,7 @@ class LocalMatchMaker(private val gateway: Gateway) {
             gateway.saveStartingMoney(startingMoney)
             gateway.savePlayer(PlayerDto(id = bankId, name = "Bank"))
             players.forEach {
-                val player = PlayerDto(id = UUID.randomUUID(), name = it)
+                val player = PlayerDto(id = UUID.randomUUID().toString(), name = it)
                 gateway.savePlayer(player)
             }
         }
