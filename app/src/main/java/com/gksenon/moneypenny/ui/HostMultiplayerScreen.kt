@@ -33,7 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gksenon.moneypenny.R
-import com.gksenon.moneypenny.viewmodel.ClientConnectionStatus
+import com.gksenon.moneypenny.domain.HostMatchMaker
 import com.gksenon.moneypenny.viewmodel.HostMultiplayerScreenState
 import com.gksenon.moneypenny.viewmodel.HostMultiplayerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -155,24 +155,24 @@ fun GameParamsScreen(
         )
         Text(text = stringResource(id = R.string.connection_requests))
         LazyColumn(modifier = Modifier.weight(1f)) {
-            items(state.connections) { connection ->
+            items(state.players) { player ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 8.dp)
                 ) {
                     Text(
-                        text = connection.name,
+                        text = player.name,
                         modifier = Modifier.weight(1f)
                     )
-                    if (connection.status == ClientConnectionStatus.PENDING) {
-                        IconButton(onClick = { onAcceptPlayerButtonClicked(connection.id) }) {
+                    if (player.status == HostMatchMaker.PlayerStatus.PENDING) {
+                        IconButton(onClick = { onAcceptPlayerButtonClicked(player.id) }) {
                             Icon(
                                 imageVector = Icons.Filled.Check,
                                 contentDescription = stringResource(id = R.string.accept_player_content_description)
                             )
                         }
-                        IconButton(onClick = { onDenyPlayerButtonClicked(connection.id) }) {
+                        IconButton(onClick = { onDenyPlayerButtonClicked(player.id) }) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = stringResource(id = R.string.deny_player_content_description)

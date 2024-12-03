@@ -1,10 +1,26 @@
 package com.gksenon.moneypenny.domain
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.scan
 
 class HostMatchMaker(private val gateway: Gateway) {
 
-    val connectionEvents = gateway.getClientConnectionEvents()
+    val players = gateway.getClientConnectionEvents().scan(emptyList<Player>()) { acc, event ->
+        when (event) {
+            is ClientConnectionEvent.Initiated -> {
+                acc.plus(Player(event.playerId, event.name, PlayerStatus.PENDING))
+            }
+
+            is ClientConnectionEvent.Connected -> {
+                acc.map { if (it.id == event.playerId) it.copy(status = PlayerStatus.ACCEPTED) else it }
+            }
+
+            is ClientConnectionEvent.Disconnected -> {
+                val disconnectedPlayer = acc.find { it.id == event.playerId }
+                if (disconnectedPlayer != null) acc.minus(disconnectedPlayer) else acc
+            }
+        }
+    }
 
     fun startAdvertising() = gateway.startAdvertising()
 
@@ -32,13 +48,22 @@ class HostMatchMaker(private val gateway: Gateway) {
         gateway.stopAdvertising()
     }
 
-    data class ClientConnectionEvent(
+    data class Player(
         val id: String,
-        val name: String = "",
-        val status: ConnectionStatus = ConnectionStatus.PENDING
+        val name: String,
+        val status: PlayerStatus
     )
 
-    enum class ConnectionStatus { PENDING, CONNECTED, DISCONNECTED }
+    enum class PlayerStatus { PENDING, ACCEPTED }
+
+    sealed class ClientConnectionEvent {
+
+        data class Initiated(val playerId: String, val name: String) : ClientConnectionEvent()
+
+        data class Connected(val playerId: String) : ClientConnectionEvent()
+
+        data class Disconnected(val playerId: String) : ClientConnectionEvent()
+    }
 
     interface Gateway {
 

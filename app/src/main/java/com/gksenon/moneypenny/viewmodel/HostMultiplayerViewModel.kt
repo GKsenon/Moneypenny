@@ -19,29 +19,8 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
     val state = _state.asStateFlow()
 
     init {
-        matchMaker.connectionEvents.onEach { event ->
-            println(event)
-            _state.update { previousState ->
-                val previousConnections = previousState.connections
-                val newConnections =
-                    if (event.status == HostMatchMaker.ConnectionStatus.DISCONNECTED) {
-                        val connection = previousConnections.find { it.id == event.id }
-                        if (connection != null) previousConnections.minus(connection) else previousConnections
-                    } else {
-                        val status = if (event.status == HostMatchMaker.ConnectionStatus.PENDING)
-                            ClientConnectionStatus.PENDING
-                        else
-                            ClientConnectionStatus.ACCEPTED
-                        if (previousConnections.any { it.id == event.id }) {
-                            previousConnections.map { if (it.id == event.id) it.copy(status = status) else it }
-                        } else {
-                            previousConnections.plus(
-                                ClientConnection(id = event.id, name = event.name, status = status)
-                            )
-                        }
-                    }
-                previousState.copy(connections = newConnections)
-            }
+        matchMaker.players.onEach { players ->
+            _state.update { previousState -> previousState.copy(players = players) }
         }.launchIn(viewModelScope)
     }
 
@@ -89,10 +68,6 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
 data class HostMultiplayerScreenState(
     val hostName: String = "",
     val startingMoney: String = "",
-    val connections: List<ClientConnection> = emptyList(),
+    val players: List<HostMatchMaker.Player> = emptyList(),
     val showStartGameConfirmationDialog: Boolean = false
 )
-
-data class ClientConnection(val id: String, val name: String, val status: ClientConnectionStatus)
-
-enum class ClientConnectionStatus { PENDING, ACCEPTED }

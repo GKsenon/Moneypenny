@@ -27,8 +27,8 @@ class NearbyHostMatchMakerGateway(private val connectionsClient: ConnectionsClie
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             GlobalScope.launch {
                 connectionEvents.emit(
-                    HostMatchMaker.ClientConnectionEvent(
-                        id = endpointId,
+                    HostMatchMaker.ClientConnectionEvent.Initiated(
+                        playerId = endpointId,
                         name = info.endpointName
                     )
                 )
@@ -37,11 +37,10 @@ class NearbyHostMatchMakerGateway(private val connectionsClient: ConnectionsClie
         }
 
         override fun onConnectionResult(endpointId: String, resolution: ConnectionResolution) {
-            val status = if (resolution.status.isSuccess)
-                HostMatchMaker.ConnectionStatus.CONNECTED
+            val event = if (resolution.status.isSuccess)
+                HostMatchMaker.ClientConnectionEvent.Connected(endpointId)
             else
-                HostMatchMaker.ConnectionStatus.DISCONNECTED
-            val event = HostMatchMaker.ClientConnectionEvent(id = endpointId, status = status)
+                HostMatchMaker.ClientConnectionEvent.Disconnected(endpointId)
             GlobalScope.launch {
                 connectionEvents.emit(event)
             }
@@ -49,10 +48,7 @@ class NearbyHostMatchMakerGateway(private val connectionsClient: ConnectionsClie
         }
 
         override fun onDisconnected(endpointId: String) {
-            val event = HostMatchMaker.ClientConnectionEvent(
-                id = endpointId,
-                status = HostMatchMaker.ConnectionStatus.DISCONNECTED
-            )
+            val event = HostMatchMaker.ClientConnectionEvent.Disconnected(endpointId)
             connectionEvents.tryEmit(event)
             println("NearbyHost: connection disconnected")
         }
