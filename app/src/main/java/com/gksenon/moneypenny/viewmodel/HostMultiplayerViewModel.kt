@@ -82,7 +82,7 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
     }
 
     fun onStartGameConfirmationDialogDismissed() {
-
+        _state.update { previousState -> previousState.copy(showStartGameConfirmationDialog = false) }
     }
 }
 
