@@ -143,7 +143,12 @@ fun GameParamsScreen(
         OutlinedTextField(
             value = state.hostName,
             onValueChange = { value -> onHostNameChanged(value) },
-            label = { Text(text = stringResource(id = R.string.your_name)) },
+            label = { Text(text = stringResource(R.string.your_name)) },
+            isError = state.showHostNameIsEmptyError,
+            supportingText = {
+                if (state.showHostNameIsEmptyError)
+                    Text(text = stringResource(id = R.string.player_name_is_empty))
+            },
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
@@ -151,6 +156,11 @@ fun GameParamsScreen(
             onValueChange = { value -> onStartingMoneyChanged(value) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             label = { Text(text = stringResource(id = R.string.starting_money)) },
+            isError = state.showStartingMoneyInvalidError,
+            supportingText = {
+                if (state.showStartingMoneyInvalidError)
+                    Text(text = stringResource(R.string.starting_money_is_invalid))
+            },
             modifier = Modifier.fillMaxWidth()
         )
         Text(text = stringResource(id = R.string.connection_requests))

@@ -34,13 +34,21 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
     }
 
     fun onHostNameChanged(value: String) {
-        _state.update { previousState -> previousState.copy(hostName = value) }
+        _state.update { previousState ->
+            previousState.copy(
+                hostName = value,
+                showHostNameIsEmptyError = false
+            )
+        }
     }
 
     fun onStartingMoneyChanged(value: String) {
         _state.update { previousState ->
             val validatedStartingMoney = value.filter { it.isDigit() }.take(9)
-            previousState.copy(startingMoney = validatedStartingMoney)
+            previousState.copy(
+                startingMoney = validatedStartingMoney,
+                showStartingMoneyInvalidError = false
+            )
         }
     }
 
@@ -53,11 +61,19 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
     }
 
     fun onStartButtonClicked() {
-        _state.update { previousState -> previousState.copy(showStartGameConfirmationDialog = true) }
+        _state.update { previousState ->
+            val isHostNameValid = previousState.hostName.isNotBlank()
+            val startingMoney = previousState.startingMoney.toIntOrNull()
+            val isStartingMoneyValid = startingMoney != null && startingMoney > 0
+            if(isHostNameValid && isStartingMoneyValid)
+                previousState.copy(showStartGameConfirmationDialog = true)
+            else
+                previousState.copy(showHostNameIsEmptyError = !isHostNameValid, showStartingMoneyInvalidError = !isStartingMoneyValid)
+        }
     }
 
     fun onStartGameConfirmationDialogConfirmed() {
-
+        matchMaker.startGame()
     }
 
     fun onStartGameConfirmationDialogDismissed() {
@@ -67,7 +83,9 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
 
 data class HostMultiplayerScreenState(
     val hostName: String = "",
+    val showHostNameIsEmptyError: Boolean = false,
     val startingMoney: String = "",
+    val showStartingMoneyInvalidError: Boolean = false,
     val players: List<HostMatchMaker.Player> = emptyList(),
     val showStartGameConfirmationDialog: Boolean = false
 )
