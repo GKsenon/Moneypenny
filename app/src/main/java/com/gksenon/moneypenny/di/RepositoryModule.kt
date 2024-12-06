@@ -1,6 +1,6 @@
 package com.gksenon.moneypenny.di
 
-import com.gksenon.moneypenny.data.InMemoryGameRepository
+import com.gksenon.moneypenny.data.InMemoryAccountantGateway
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,5 +13,5 @@ class RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideGameRepository() = InMemoryGameRepository()
+    fun provideGameRepository() = InMemoryAccountantGateway()
 }

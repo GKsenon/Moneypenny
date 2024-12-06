@@ -1,14 +1,13 @@
 package com.gksenon.moneypenny.data
 
 import com.gksenon.moneypenny.domain.Accountant
-import com.gksenon.moneypenny.domain.LocalMatchMaker
 import com.gksenon.moneypenny.domain.dto.PlayerDto
 import com.gksenon.moneypenny.domain.dto.TransactionDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
-class InMemoryGameRepository: LocalMatchMaker.Gateway, Accountant.Gateway {
+class InMemoryAccountantGateway: Accountant.Gateway {
 
     private var startingMoney = 0
     private val players = MutableStateFlow<List<PlayerDto>>(emptyList())

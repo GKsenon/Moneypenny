@@ -41,7 +41,10 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
 @ExperimentalPermissionsApi
 @Composable
-fun HostMultiplayerScreen(viewModel: HostMultiplayerViewModel = hiltViewModel()) {
+fun HostMultiplayerScreen(
+    viewModel: HostMultiplayerViewModel = hiltViewModel(),
+    onNavigateToGameScreen: () -> Unit
+) {
     val state by viewModel.state.collectAsState()
     Scaffold(
         topBar = { TopAppBar(title = { Text(text = stringResource(id = R.string.host_multiplayer)) }) }
@@ -80,7 +83,7 @@ fun HostMultiplayerScreen(viewModel: HostMultiplayerViewModel = hiltViewModel())
             title = { Text(text = stringResource(id = R.string.start_game_dialog_title)) },
             text = { Text(text = stringResource(id = R.string.start_game_dialog_text)) },
             confirmButton = {
-                Button(onClick = { viewModel.onStartGameConfirmationDialogConfirmed() }) {
+                Button(onClick = { viewModel.onStartGameConfirmationDialogConfirmed(onNavigateToGameScreen) }) {
                     Text(text = stringResource(id = android.R.string.ok))
                 }
             },

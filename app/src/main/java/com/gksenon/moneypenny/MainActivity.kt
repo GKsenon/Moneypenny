@@ -4,16 +4,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.navigation.NavOptions
-import androidx.navigation.NavOptionsBuilder
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.gksenon.moneypenny.domain.LOCAL_GAME
+import com.gksenon.moneypenny.domain.MULTIPLAYER_HOST_GAME
 import com.gksenon.moneypenny.ui.GameScreen
+import com.gksenon.moneypenny.ui.HostMultiplayerScreen
 import com.gksenon.moneypenny.ui.JoinMultiplayerScreen
 import com.gksenon.moneypenny.ui.MainScreen
-import com.gksenon.moneypenny.ui.HostMultiplayerScreen
 import com.gksenon.moneypenny.ui.StartScreen
 import com.gksenon.moneypenny.ui.theme.MoneypennyTheme
+import com.gksenon.moneypenny.viewmodel.GAME_TYPE_KEY
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -50,12 +54,27 @@ class MainActivity : ComponentActivity() {
                             val options = NavOptions.Builder()
                                 .setPopUpTo(route = MAIN_SCREEN, inclusive = false)
                                 .build()
-                            navController.navigate(route = GAME_SCREEN, navOptions = options)
+                            navController.navigate(route = "$GAME_SCREEN/$LOCAL_GAME", navOptions = options)
                         })
                     }
-                    composable(route = HOST_MULTIPLAYER_SCREEN) { HostMultiplayerScreen() }
+                    composable(route = HOST_MULTIPLAYER_SCREEN) {
+                        HostMultiplayerScreen(
+                            onNavigateToGameScreen = {
+                                val options = NavOptions.Builder()
+                                    .setPopUpTo(route = MAIN_SCREEN, inclusive = false)
+                                    .build()
+                                navController.navigate(
+                                    route = "$GAME_SCREEN/$MULTIPLAYER_HOST_GAME",
+                                    navOptions = options
+                                )
+                            }
+                        )
+                    }
                     composable(route = JOIN_MULTIPLAYER_SCREEN) { JoinMultiplayerScreen() }
-                    composable(route = GAME_SCREEN) {
+                    composable(
+                        route = "$GAME_SCREEN/{$GAME_TYPE_KEY}",
+                        arguments = listOf(navArgument(GAME_TYPE_KEY) { type = NavType.StringType })
+                    ) {
                         GameScreen(onNavigateToMainScreen = {
                             navController.popBackStack()
                         })

@@ -1,8 +1,10 @@
 package com.gksenon.moneypenny.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gksenon.moneypenny.domain.Accountant
+import com.gksenon.moneypenny.domain.AccountantFactory
+import com.gksenon.moneypenny.domain.LOCAL_GAME
 import com.gksenon.moneypenny.domain.Player
 import com.gksenon.moneypenny.domain.Transaction
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,13 +17,22 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.random.Random
 
+const val GAME_TYPE_KEY = "type"
+
 @HiltViewModel
-class GameViewModel @Inject constructor(private val accountant: Accountant) : ViewModel() {
+class GameViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    accountantFactory: AccountantFactory
+) : ViewModel() {
+
+    private val accountant =
+        accountantFactory.getAccountant(savedStateHandle.get<String>(GAME_TYPE_KEY) ?: LOCAL_GAME)
 
     private val _state = MutableStateFlow(GameScreenState())
     val state = _state.asStateFlow()
 
     init {
+        println(savedStateHandle.get<String>(GAME_TYPE_KEY))
         accountant.getPlayers().onEach { players ->
             _state.update { previousState ->
                 val playerCards = players.map { player ->

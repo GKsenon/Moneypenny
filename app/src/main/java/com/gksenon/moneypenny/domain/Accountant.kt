@@ -10,10 +10,13 @@ import java.util.UUID
 
 val BANK_ID = UUID.nameUUIDFromBytes("Bank".toByteArray()).toString()
 
-
 class Accountant(private val gateway: Gateway) {
 
-    val isGameStarted = gateway.getPlayers().map { it.isNotEmpty() }
+    fun startGame(startingMoney: Int, players: List<PlayerDto>) {
+        gateway.saveStartingMoney(startingMoney)
+        gateway.savePlayer(PlayerDto(id = BANK_ID, name = "Bank"))
+        players.forEach { player -> gateway.savePlayer(player) }
+    }
 
     fun getPlayers(): Flow<List<Player>> = gateway.getPlayers()
         .combine(gateway.getTransactions()) { players, transactions ->
@@ -74,6 +77,10 @@ class Accountant(private val gateway: Gateway) {
     }
 
     interface Gateway {
+
+        fun saveStartingMoney(startingMoney: Int)
+
+        fun savePlayer(player: PlayerDto)
 
         fun getStartingMoney(): Int
 

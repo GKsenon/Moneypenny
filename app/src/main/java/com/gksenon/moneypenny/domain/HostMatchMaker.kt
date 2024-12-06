@@ -28,10 +28,6 @@ class HostMatchMaker(private val gateway: Gateway) {
 
     fun rejectConnection(connectionId: String) = gateway.rejectConnection(connectionId)
 
-    fun startGame() {
-
-    }
-
     fun reset() {
         gateway.stopAdvertising()
     }
