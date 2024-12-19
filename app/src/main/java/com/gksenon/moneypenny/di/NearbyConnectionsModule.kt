@@ -1,7 +1,10 @@
 package com.gksenon.moneypenny.di
 
 import android.content.Context
+import com.gksenon.moneypenny.data.NearbyClientGateway
+import com.gksenon.moneypenny.data.NearbyHostGateway
 import com.google.android.gms.nearby.Nearby
+import com.google.android.gms.nearby.connection.ConnectionsClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,4 +20,14 @@ class NearbyConnectionsModule {
     @Singleton
     fun provideConnectionsClient(@ApplicationContext context: Context) =
         Nearby.getConnectionsClient(context)
+
+    @Provides
+    @Singleton
+    fun provideNearbyClientGateway(connectionsClient: ConnectionsClient) =
+        NearbyClientGateway(connectionsClient)
+
+    @Provides
+    @Singleton
+    fun provideNearbyHostGateway(connectionsClient: ConnectionsClient) =
+        NearbyHostGateway(connectionsClient)
 }

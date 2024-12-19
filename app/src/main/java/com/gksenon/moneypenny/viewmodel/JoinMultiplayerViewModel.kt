@@ -28,6 +28,7 @@ class JoinMultiplayerViewModel @Inject constructor(private val matchMaker: Clien
                     ClientMatchMaker.ConnectionStatus.CONNECTING -> JoinMultiplayerScreenState.ConnectingToHost
                     ClientMatchMaker.ConnectionStatus.ACCEPTED -> JoinMultiplayerScreenState.AcceptedByHost
                     ClientMatchMaker.ConnectionStatus.REJECTED -> JoinMultiplayerScreenState.RejectedByHost
+                    ClientMatchMaker.ConnectionStatus.STARTED -> JoinMultiplayerScreenState.GameStarted
                 }
             }
         }.launchIn(viewModelScope)
@@ -70,4 +71,6 @@ sealed class JoinMultiplayerScreenState {
     data object AcceptedByHost : JoinMultiplayerScreenState()
 
     data object RejectedByHost : JoinMultiplayerScreenState()
+
+    data object GameStarted: JoinMultiplayerScreenState()
 }

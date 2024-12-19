@@ -7,11 +7,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
-class InMemoryAccountantGateway: Accountant.Gateway {
+class InMemoryAccountantGateway : Accountant.Gateway {
 
     private var startingMoney = 0
     private val players = MutableStateFlow<List<PlayerDto>>(emptyList())
     private val transactions = MutableStateFlow<List<TransactionDto>>(emptyList())
+
+    override fun saveGameParams(startingMoney: Int, players: List<PlayerDto>) {
+        this.startingMoney = startingMoney
+        this.players.value = players
+    }
 
     override fun getStartingMoney(): Int = startingMoney
 
@@ -35,13 +40,5 @@ class InMemoryAccountantGateway: Accountant.Gateway {
         startingMoney = 0
         players.value = emptyList()
         transactions.value = emptyList()
-    }
-
-    override fun saveStartingMoney(startingMoney: Int) {
-        this.startingMoney = startingMoney
-    }
-
-    override fun savePlayer(player: PlayerDto) {
-        players.value = players.value.plus(player)
     }
 }

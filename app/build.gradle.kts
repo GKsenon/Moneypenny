@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
 }
 
@@ -86,6 +87,7 @@ dependencies {
     implementation ("net.danlew:android.joda:2.12.6")
     implementation("androidx.profileinstaller:profileinstaller:1.3.1")
     implementation("com.google.android.gms:play-services-nearby:19.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))

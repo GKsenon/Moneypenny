@@ -1,6 +1,10 @@
 package com.gksenon.moneypenny.data
 
+import com.gksenon.moneypenny.domain.Accountant
+import com.gksenon.moneypenny.domain.BANK_ID
 import com.gksenon.moneypenny.domain.HostMatchMaker
+import com.gksenon.moneypenny.domain.dto.PlayerDto
+import com.gksenon.moneypenny.domain.dto.TransactionDto
 import com.google.android.gms.nearby.connection.AdvertisingOptions
 import com.google.android.gms.nearby.connection.ConnectionInfo
 import com.google.android.gms.nearby.connection.ConnectionLifecycleCallback
@@ -11,15 +15,18 @@ import com.google.android.gms.nearby.connection.PayloadCallback
 import com.google.android.gms.nearby.connection.PayloadTransferUpdate
 import com.google.android.gms.nearby.connection.Strategy
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 const val SERVICE_ID = "com.gksenon.moneypenny.multiplayer"
 
-class NearbyHostMatchMakerGateway(private val connectionsClient: ConnectionsClient) :
-    HostMatchMaker.Gateway {
+class NearbyHostGateway(private val connectionsClient: ConnectionsClient) :
+    HostMatchMaker.Gateway, Accountant.Gateway {
 
     private val connectionEvents = MutableSharedFlow<HostMatchMaker.ClientConnectionEvent>()
     private val connectionsLifecycleCallback = object : ConnectionLifecycleCallback() {
@@ -33,7 +40,6 @@ class NearbyHostMatchMakerGateway(private val connectionsClient: ConnectionsClie
                     )
                 )
             }
-            println("NearbyHost: on connection initiated: ${info.endpointName}")
         }
 
         override fun onConnectionResult(endpointId: String, resolution: ConnectionResolution) {
@@ -44,13 +50,11 @@ class NearbyHostMatchMakerGateway(private val connectionsClient: ConnectionsClie
             GlobalScope.launch {
                 connectionEvents.emit(event)
             }
-            println("NearbyHost: on connection result: ${resolution.status.isSuccess}")
         }
 
         override fun onDisconnected(endpointId: String) {
             val event = HostMatchMaker.ClientConnectionEvent.Disconnected(endpointId)
             connectionEvents.tryEmit(event)
-            println("NearbyHost: connection disconnected")
         }
     }
     private val payloadCallback = object : PayloadCallback() {
@@ -71,11 +75,7 @@ class NearbyHostMatchMakerGateway(private val connectionsClient: ConnectionsClie
             SERVICE_ID,
             connectionsLifecycleCallback,
             options
-        ).addOnSuccessListener {
-            println("NearbyHost: advertising started")
-        }.addOnFailureListener {
-            println("NearbyHost: advertising stopped")
-        }
+        )
     }
 
     override fun getClientConnectionEvents() = connectionEvents
@@ -91,6 +91,45 @@ class NearbyHostMatchMakerGateway(private val connectionsClient: ConnectionsClie
     override fun stopAdvertising() {
         connectionsClient.stopAdvertising()
     }
+
+    private var startingMoney = 0
+    private val players = MutableStateFlow<List<PlayerDto>>(emptyList())
+    private val transactions = MutableStateFlow<List<TransactionDto>>(emptyList())
+
+    override fun saveGameParams(startingMoney: Int, players: List<PlayerDto>) {
+        this.startingMoney = startingMoney
+        this.players.value = players
+        for (player in players.filter { it.id != BANK_ID }) {
+            val message: Message = Message.Start(
+                startingMoney = startingMoney,
+                players = players.map { PlayerEntity(it.id, it.name) }
+            )
+            val payload = Payload.fromBytes(
+                Json.encodeToString(message).toByteArray(charset = Charsets.UTF_8)
+            )
+            connectionsClient.sendPayload(player.id, payload)
+        }
+    }
+
+    override fun getStartingMoney(): Int = startingMoney
+
+    override fun getPlayer(playerId: String): PlayerDto? = players.value.find { it.id == playerId }
+
+    override fun getPlayers(): Flow<List<PlayerDto>> = players
+
+    override fun getTransactions(): Flow<List<TransactionDto>> = transactions
+
+    override fun getLastTransaction(): Flow<TransactionDto?> = transactions.map { it.lastOrNull() }
+
+    override suspend fun saveTransaction(transaction: TransactionDto) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteTransaction(id: String) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun clear() {
+        TODO("Not yet implemented")
+    }
 }
-
-

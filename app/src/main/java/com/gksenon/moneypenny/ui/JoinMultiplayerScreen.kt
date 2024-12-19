@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,7 +36,10 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun JoinMultiplayerScreen(viewModel: JoinMultiplayerViewModel = hiltViewModel()) {
+fun JoinMultiplayerScreen(
+    viewModel: JoinMultiplayerViewModel = hiltViewModel(),
+    onNavigateToGameScreen: () -> Unit
+) {
     Scaffold(
         topBar = { TopAppBar(title = { Text(text = stringResource(id = R.string.join_multiplayer)) }) }
     ) { contentPadding ->
@@ -78,6 +82,7 @@ fun JoinMultiplayerScreen(viewModel: JoinMultiplayerViewModel = hiltViewModel())
                     JoinMultiplayerScreenState.AcceptedByHost -> AcceptedScreen()
                     JoinMultiplayerScreenState.RejectedByHost -> RejectedScreen(
                         onTryAgainButtonClicked = { viewModel.onTryAgainButtonClicked() })
+                    JoinMultiplayerScreenState.GameStarted -> LaunchedEffect(state) { onNavigateToGameScreen() }
                 }
             }
         }

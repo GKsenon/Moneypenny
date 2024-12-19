@@ -11,7 +11,7 @@ class ClientMatchMaker(private val gateway: Gateway) {
     fun reset() = gateway.stopDiscovery()
 
     enum class ConnectionStatus {
-        IDLE, DISCOVERY, CONNECTING, ACCEPTED, REJECTED
+        IDLE, DISCOVERY, CONNECTING, ACCEPTED, REJECTED, STARTED
     }
 
     interface Gateway {

@@ -1,11 +1,10 @@
 package com.gksenon.moneypenny.di
 
-import com.gksenon.moneypenny.data.NearbyClientMatchMakerGateway
-import com.gksenon.moneypenny.data.NearbyHostMatchMakerGateway
+import com.gksenon.moneypenny.data.NearbyClientGateway
+import com.gksenon.moneypenny.data.NearbyHostGateway
 import com.gksenon.moneypenny.domain.ClientMatchMaker
 import com.gksenon.moneypenny.domain.HostMatchMaker
 import com.gksenon.moneypenny.domain.LocalMatchMaker
-import com.google.android.gms.nearby.connection.ConnectionsClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,11 +21,10 @@ class MatchMakerModule {
 
     @Provides
     @Singleton
-    fun provideHostMatchMaker(connectionsClient: ConnectionsClient): HostMatchMaker =
-        HostMatchMaker(NearbyHostMatchMakerGateway(connectionsClient))
+    fun provideHostMatchMaker(gateway: NearbyHostGateway): HostMatchMaker = HostMatchMaker(gateway)
 
     @Provides
     @Singleton
-    fun provideClientMatchMaker(connectionsClient: ConnectionsClient): ClientMatchMaker =
-        ClientMatchMaker(NearbyClientMatchMakerGateway(connectionsClient))
+    fun provideClientMatchMaker(gateway: NearbyClientGateway): ClientMatchMaker =
+        ClientMatchMaker(gateway)
 }

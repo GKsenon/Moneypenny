@@ -84,7 +84,8 @@ class HostMultiplayerViewModel @Inject constructor(
     fun onStartGameConfirmationDialogConfirmed(onNavigateToGameScreen: () -> Unit) {
         matchMaker.reset()
         val startingMoney = _state.value.startingMoney.toIntOrNull() ?: 0
-        val players = _state.value.players.map { PlayerDto(it.id, it.name) }
+        val host = PlayerDto(id = "", name = _state.value.hostName)
+        val players = _state.value.players.map { PlayerDto(it.id, it.name) }.plus(host)
         accountant.startGame(startingMoney, players)
         onNavigateToGameScreen()
     }

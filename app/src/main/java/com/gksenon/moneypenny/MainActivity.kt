@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.gksenon.moneypenny.domain.LOCAL_GAME
+import com.gksenon.moneypenny.domain.MULTIPLAYER_CLIENT_GAME
 import com.gksenon.moneypenny.domain.MULTIPLAYER_HOST_GAME
 import com.gksenon.moneypenny.ui.GameScreen
 import com.gksenon.moneypenny.ui.HostMultiplayerScreen
@@ -70,7 +71,17 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-                    composable(route = JOIN_MULTIPLAYER_SCREEN) { JoinMultiplayerScreen() }
+                    composable(route = JOIN_MULTIPLAYER_SCREEN) {
+                        JoinMultiplayerScreen(onNavigateToGameScreen = {
+                            val options = NavOptions.Builder()
+                                .setPopUpTo(route = MAIN_SCREEN, inclusive = false)
+                                .build()
+                            navController.navigate(
+                                route = "$GAME_SCREEN/$MULTIPLAYER_CLIENT_GAME",
+                                navOptions = options
+                            )
+                        })
+                    }
                     composable(
                         route = "$GAME_SCREEN/{$GAME_TYPE_KEY}",
                         arguments = listOf(navArgument(GAME_TYPE_KEY) { type = NavType.StringType })

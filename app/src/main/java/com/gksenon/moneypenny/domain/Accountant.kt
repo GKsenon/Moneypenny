@@ -13,9 +13,8 @@ val BANK_ID = UUID.nameUUIDFromBytes("Bank".toByteArray()).toString()
 class Accountant(private val gateway: Gateway) {
 
     fun startGame(startingMoney: Int, players: List<PlayerDto>) {
-        gateway.saveStartingMoney(startingMoney)
-        gateway.savePlayer(PlayerDto(id = BANK_ID, name = "Bank"))
-        players.forEach { player -> gateway.savePlayer(player) }
+        val bank = PlayerDto(id = BANK_ID, name = "Bank")
+        gateway.saveGameParams(startingMoney, players.plus(bank))
     }
 
     fun getPlayers(): Flow<List<Player>> = gateway.getPlayers()
@@ -78,9 +77,7 @@ class Accountant(private val gateway: Gateway) {
 
     interface Gateway {
 
-        fun saveStartingMoney(startingMoney: Int)
-
-        fun savePlayer(player: PlayerDto)
+        fun saveGameParams(startingMoney: Int, players: List<PlayerDto>)
 
         fun getStartingMoney(): Int
 
