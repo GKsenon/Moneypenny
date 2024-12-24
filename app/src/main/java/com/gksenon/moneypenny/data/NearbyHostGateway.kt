@@ -88,10 +88,6 @@ class NearbyHostGateway(private val connectionsClient: ConnectionsClient) :
                 is Message.Accepted -> {}
                 is Message.Start -> {}
                 is Message.SaveTransaction -> {
-                    players.value.filter { it.id.isNotBlank() && it.id != BANK_ID && it.id != endpointId }
-                        .forEach { player ->
-                            connectionsClient.sendPayload(player.id, payload)
-                        }
                     val transaction = TransactionDto(
                         id = message.id,
                         time = Instant.ofEpochMilli(message.time),
@@ -99,17 +95,27 @@ class NearbyHostGateway(private val connectionsClient: ConnectionsClient) :
                         recipientId = message.recipientId,
                         amount = message.amount
                     )
-                    transactions.value = transactions.value.plus(transaction)
+                    transactions.value += transaction
+                    sendToClients(
+                        message = message,
+                        excluding = endpointIdToPlayerIdMap[endpointId]
+                    )
                 }
 
-                is Message.DeleteTransaction -> {}
+                is Message.DeleteTransaction -> {
+                    transactions.value
+                        .find { transaction -> transaction.id == message.id }
+                        ?.let { transaction ->
+                            transactions.value -= transaction
+                            sendToClients(message = message, excluding = endpointIdToPlayerIdMap[endpointId])
+                        }
+                }
+
                 is Message.Finish -> {}
             }
         }
 
-        override fun onPayloadTransferUpdate(endpointId: String, update: PayloadTransferUpdate) {
-
-        }
+        override fun onPayloadTransferUpdate(endpointId: String, update: PayloadTransferUpdate) {}
     }
 
     override fun startAdvertising() {
@@ -170,29 +176,34 @@ class NearbyHostGateway(private val connectionsClient: ConnectionsClient) :
     override fun getLastTransaction(): Flow<TransactionDto?> = transactions.map { it.lastOrNull() }
 
     override suspend fun saveTransaction(transaction: TransactionDto) {
-        transactions.value = transactions.value.plus(transaction)
-        players.value.filter { it.id != HOST_ID && it.id != BANK_ID }.forEach { player ->
-            val saveTransactionMessage: Message = Message.SaveTransaction(
-                id = transaction.id,
-                time = transaction.time.millis,
-                senderId = transaction.senderId,
-                recipientId = transaction.recipientId,
-                amount = transaction.amount
-            )
-            val payload = Payload.fromBytes(
-                Json.encodeToString(saveTransactionMessage).toByteArray(charset = Charsets.UTF_8)
-            )
-            playerIdToEndpointIdMap[UUID.fromString(player.id)]?.let { endpointId ->
-                connectionsClient.sendPayload(endpointId, payload)
-            }
-        }
+        transactions.value += transaction
+        val saveTransactionMessage: Message = Message.SaveTransaction(
+            id = transaction.id,
+            time = transaction.time.millis,
+            senderId = transaction.senderId,
+            recipientId = transaction.recipientId,
+            amount = transaction.amount
+        )
+        sendToClients(saveTransactionMessage)
     }
 
     override suspend fun deleteTransaction(id: String) {
-        TODO("Not yet implemented")
+        transactions.value.find { transaction -> transaction.id == id }?.let { transaction ->
+            transactions.value -= transaction
+            sendToClients(Message.DeleteTransaction(id = id))
+        }
     }
 
     override suspend fun clear() {
         TODO("Not yet implemented")
+    }
+
+    private fun sendToClients(message: Message, excluding: UUID? = null) {
+        val encodedMessage = Json.encodeToString(message).toByteArray(Charsets.UTF_8)
+        val payload = Payload.fromBytes(encodedMessage)
+        players.value.filter { player ->
+            player.id != BANK_ID && player.id != HOST_ID && UUID.fromString(player.id) != excluding
+        }.mapNotNull { player -> playerIdToEndpointIdMap[UUID.fromString(player.id)] }
+            .forEach { endpointId -> connectionsClient.sendPayload(endpointId, payload) }
     }
 }

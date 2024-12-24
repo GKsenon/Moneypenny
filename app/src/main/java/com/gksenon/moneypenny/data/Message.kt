@@ -21,7 +21,7 @@ sealed class Message {
     ) : Message()
 
     @Serializable
-    class DeleteTransaction() : Message()
+    class DeleteTransaction(val id: String) : Message()
 
     @Serializable
     class Finish() : Message()
