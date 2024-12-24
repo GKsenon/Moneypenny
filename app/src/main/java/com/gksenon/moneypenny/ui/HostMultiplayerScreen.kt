@@ -38,6 +38,7 @@ import com.gksenon.moneypenny.viewmodel.HostMultiplayerScreenState
 import com.gksenon.moneypenny.viewmodel.HostMultiplayerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import java.util.UUID
 
 @ExperimentalPermissionsApi
 @Composable
@@ -128,8 +129,8 @@ fun GameParamsScreen(
     state: HostMultiplayerScreenState,
     onHostNameChanged: (String) -> Unit,
     onStartingMoneyChanged: (String) -> Unit,
-    onAcceptPlayerButtonClicked: (String) -> Unit,
-    onDenyPlayerButtonClicked: (String) -> Unit,
+    onAcceptPlayerButtonClicked: (UUID) -> Unit,
+    onDenyPlayerButtonClicked: (UUID) -> Unit,
     onStartButtonClicked: () -> Unit,
     contentPadding: PaddingValues
 ) {

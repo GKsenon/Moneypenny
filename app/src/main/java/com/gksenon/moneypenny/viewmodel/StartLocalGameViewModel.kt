@@ -2,25 +2,17 @@ package com.gksenon.moneypenny.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gksenon.moneypenny.domain.Accountant
 import com.gksenon.moneypenny.domain.GameParamsValidationError
-import com.gksenon.moneypenny.domain.LOCAL_GAME
 import com.gksenon.moneypenny.domain.LocalMatchMaker
-import com.gksenon.moneypenny.domain.dto.PlayerDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
-import javax.inject.Named
 
 @HiltViewModel
-class StartLocalGameViewModel @Inject constructor(
-    private val matchMaker: LocalMatchMaker,
-    @Named(LOCAL_GAME) private val accountant: Accountant
-) :
+class StartLocalGameViewModel @Inject constructor(private val matchMaker: LocalMatchMaker) :
     ViewModel() {
 
     private val _state = MutableStateFlow(StartScreenState())
@@ -94,9 +86,9 @@ class StartLocalGameViewModel @Inject constructor(
     fun onStartButtonClicked(openGameScreen: () -> Unit) {
         val currentState = _state.value
         val startingMoney = currentState.startingMoney.toIntOrNull() ?: 0
-        val players = currentState.players.map { playerName -> PlayerDto(UUID.randomUUID().toString(), playerName) }
+        val playerNames = currentState.players
         _state.update { StartScreenState() }
-        viewModelScope.launch { accountant.startGame(startingMoney, players) }
+        viewModelScope.launch { matchMaker.startGame(startingMoney, playerNames) }
         openGameScreen()
     }
 }

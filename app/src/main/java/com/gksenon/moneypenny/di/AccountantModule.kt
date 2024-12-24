@@ -1,6 +1,6 @@
 package com.gksenon.moneypenny.di
 
-import com.gksenon.moneypenny.data.InMemoryAccountantGateway
+import com.gksenon.moneypenny.data.InMemoryGateway
 import com.gksenon.moneypenny.data.NearbyClientGateway
 import com.gksenon.moneypenny.data.NearbyHostGateway
 import com.gksenon.moneypenny.domain.Accountant
@@ -21,7 +21,7 @@ class AccountantModule {
     @Singleton
     @Provides
     @Named(LOCAL_GAME)
-    fun provideAccountant(gateway: InMemoryAccountantGateway): Accountant = Accountant(gateway)
+    fun provideAccountant(gateway: InMemoryGateway): Accountant = Accountant(gateway)
 
     @Singleton
     @Provides

@@ -8,14 +8,7 @@ import kotlinx.coroutines.flow.map
 import org.joda.time.Instant
 import java.util.UUID
 
-val BANK_ID = UUID.nameUUIDFromBytes("Bank".toByteArray()).toString()
-
 class Accountant(private val gateway: Gateway) {
-
-    fun startGame(startingMoney: Int, players: List<PlayerDto>) {
-        val bank = PlayerDto(id = BANK_ID, name = "Bank")
-        gateway.saveGameParams(startingMoney, players.plus(bank))
-    }
 
     fun getPlayers(): Flow<List<Player>> = gateway.getPlayers()
         .combine(gateway.getTransactions()) { players, transactions ->
@@ -76,8 +69,6 @@ class Accountant(private val gateway: Gateway) {
     }
 
     interface Gateway {
-
-        fun saveGameParams(startingMoney: Int, players: List<PlayerDto>)
 
         fun getStartingMoney(): Int
 

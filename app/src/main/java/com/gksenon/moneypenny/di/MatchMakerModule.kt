@@ -1,5 +1,6 @@
 package com.gksenon.moneypenny.di
 
+import com.gksenon.moneypenny.data.InMemoryGateway
 import com.gksenon.moneypenny.data.NearbyClientGateway
 import com.gksenon.moneypenny.data.NearbyHostGateway
 import com.gksenon.moneypenny.domain.ClientMatchMaker
@@ -17,7 +18,7 @@ class MatchMakerModule {
 
     @Provides
     @Singleton
-    fun provideLocalMatchMaker(): LocalMatchMaker = LocalMatchMaker()
+    fun provideLocalMatchMaker(gateway: InMemoryGateway): LocalMatchMaker = LocalMatchMaker(gateway)
 
     @Provides
     @Singleton

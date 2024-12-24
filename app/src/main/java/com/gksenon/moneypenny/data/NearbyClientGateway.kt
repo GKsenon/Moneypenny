@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import org.joda.time.Instant
+import java.util.UUID
 
 class NearbyClientGateway(private val connectionsClient: ConnectionsClient) :
     ClientMatchMaker.Gateway, Accountant.Gateway {
@@ -27,6 +30,8 @@ class NearbyClientGateway(private val connectionsClient: ConnectionsClient) :
     private val status = MutableStateFlow(ClientMatchMaker.ConnectionStatus.IDLE)
 
     private var clientName: String = ""
+    private var clientId: UUID? = null
+    private var hostId: String = ""
 
     private var startingMoney = 0
     private val players = MutableStateFlow<List<PlayerDto>>(emptyList())
@@ -66,12 +71,28 @@ class NearbyClientGateway(private val connectionsClient: ConnectionsClient) :
             val message = Json.decodeFromString<Message>(
                 payload.asBytes()?.toString(charset = Charsets.UTF_8) ?: ""
             )
-            if (message is Message.Start) {
-                startingMoney = message.startingMoney
-                players.value = message.players.map {
-                    PlayerDto(id = it.id.ifBlank { endpointId }, name = it.name)
+            when(message) {
+                is Message.Accepted -> {
+                    clientId = UUID.fromString(message.id)
                 }
-                status.update { ClientMatchMaker.ConnectionStatus.STARTED }
+                is Message.Start -> {
+                    hostId = endpointId
+                    startingMoney = message.startingMoney
+                    players.value = message.players.map { PlayerDto(id = it.id, name = it.name) }
+                    status.update { ClientMatchMaker.ConnectionStatus.STARTED }
+                }
+                is Message.SaveTransaction -> {
+                    val transactionDto = TransactionDto(
+                        id = message.id,
+                        time = Instant.ofEpochMilli(message.time),
+                        senderId = message.senderId.ifBlank { endpointId },
+                        recipientId = message.recipientId.ifBlank { endpointId },
+                        amount = message.amount
+                    )
+                    transactions.value = transactions.value.plus(transactionDto)
+                }
+                is Message.DeleteTransaction -> {}
+                is Message.Finish -> {}
             }
         }
 
@@ -98,10 +119,6 @@ class NearbyClientGateway(private val connectionsClient: ConnectionsClient) :
         status.update { ClientMatchMaker.ConnectionStatus.IDLE }
     }
 
-    override fun saveGameParams(startingMoney: Int, players: List<PlayerDto>) {
-        TODO("Not yet implemented")
-    }
-
     override fun getStartingMoney(): Int = startingMoney
 
     override fun getPlayer(playerId: String): PlayerDto? = players.value.find { it.id == playerId }
@@ -113,7 +130,16 @@ class NearbyClientGateway(private val connectionsClient: ConnectionsClient) :
     override fun getLastTransaction(): Flow<TransactionDto?> = transactions.map { it.lastOrNull() }
 
     override suspend fun saveTransaction(transaction: TransactionDto) {
-        TODO("Not yet implemented")
+        transactions.value = transactions.value.plus(transaction)
+        val saveTransactionMessage: Message = Message.SaveTransaction(
+            id = transaction.id,
+            time = transaction.time.millis,
+            senderId = transaction.senderId,
+            recipientId = transaction.recipientId,
+            amount = transaction.amount
+        )
+        val payload = Payload.fromBytes(Json.encodeToString(saveTransactionMessage).toByteArray(charset = Charsets.UTF_8))
+        connectionsClient.sendPayload(hostId, payload)
     }
 
     override suspend fun deleteTransaction(id: String) {

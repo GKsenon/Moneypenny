@@ -1,6 +1,7 @@
 package com.gksenon.moneypenny.di
 
 import android.content.Context
+import com.gksenon.moneypenny.data.InMemoryGateway
 import com.gksenon.moneypenny.data.NearbyClientGateway
 import com.gksenon.moneypenny.data.NearbyHostGateway
 import com.google.android.gms.nearby.Nearby
@@ -14,7 +15,7 @@ import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
 @Module
-class NearbyConnectionsModule {
+class GatewayModule {
 
     @Provides
     @Singleton
@@ -30,4 +31,8 @@ class NearbyConnectionsModule {
     @Singleton
     fun provideNearbyHostGateway(connectionsClient: ConnectionsClient) =
         NearbyHostGateway(connectionsClient)
+
+    @Provides
+    @Singleton
+    fun provideInMemoryGateway() = InMemoryGateway()
 }

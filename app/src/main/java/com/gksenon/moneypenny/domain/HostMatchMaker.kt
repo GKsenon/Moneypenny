@@ -1,22 +1,24 @@
 package com.gksenon.moneypenny.domain
 
+import com.gksenon.moneypenny.domain.dto.PlayerDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.scan
+import java.util.UUID
 
 class HostMatchMaker(private val gateway: Gateway) {
 
     val players = gateway.getClientConnectionEvents().scan(emptyList<Player>()) { acc, event ->
         when (event) {
             is ClientConnectionEvent.Initiated -> {
-                acc.plus(Player(event.playerId, event.name, PlayerStatus.PENDING))
+                acc.plus(Player(event.id, event.name, PlayerStatus.PENDING))
             }
 
             is ClientConnectionEvent.Connected -> {
-                acc.map { if (it.id == event.playerId) it.copy(status = PlayerStatus.ACCEPTED) else it }
+                acc.map { if (it.id == event.id) it.copy(status = PlayerStatus.ACCEPTED) else it }
             }
 
             is ClientConnectionEvent.Disconnected -> {
-                val disconnectedPlayer = acc.find { it.id == event.playerId }
+                val disconnectedPlayer = acc.find { it.id == event.id }
                 if (disconnectedPlayer != null) acc.minus(disconnectedPlayer) else acc
             }
         }
@@ -24,16 +26,26 @@ class HostMatchMaker(private val gateway: Gateway) {
 
     fun startAdvertising() = gateway.startAdvertising()
 
-    fun acceptConnection(connectionId: String) = gateway.acceptConnection(connectionId)
+    fun acceptConnection(connectionId: UUID) = gateway.acceptConnection(connectionId)
 
-    fun rejectConnection(connectionId: String) = gateway.rejectConnection(connectionId)
+    fun rejectConnection(connectionId: UUID) = gateway.rejectConnection(connectionId)
+
+    fun startGame(hostName: String, startingMoney: Int, players: List<Player>) {
+        gateway.stopAdvertising()
+        val bank = PlayerDto(id = BANK_ID, name = "Bank")
+        val host = PlayerDto(id = HOST_ID, name = hostName)
+        gateway.sendStartingMessage(
+            startingMoney = startingMoney,
+            players = players.map { PlayerDto(it.id.toString(), it.name) } + host + bank
+        )
+    }
 
     fun reset() {
         gateway.stopAdvertising()
     }
 
     data class Player(
-        val id: String,
+        val id: UUID,
         val name: String,
         val status: PlayerStatus
     )
@@ -42,11 +54,11 @@ class HostMatchMaker(private val gateway: Gateway) {
 
     sealed class ClientConnectionEvent {
 
-        data class Initiated(val playerId: String, val name: String) : ClientConnectionEvent()
+        data class Initiated(val id: UUID, val name: String) : ClientConnectionEvent()
 
-        data class Connected(val playerId: String) : ClientConnectionEvent()
+        data class Connected(val id: UUID) : ClientConnectionEvent()
 
-        data class Disconnected(val playerId: String) : ClientConnectionEvent()
+        data class Disconnected(val id: UUID) : ClientConnectionEvent()
     }
 
     interface Gateway {
@@ -55,10 +67,12 @@ class HostMatchMaker(private val gateway: Gateway) {
 
         fun getClientConnectionEvents(): Flow<ClientConnectionEvent>
 
-        fun acceptConnection(connectionId: String)
+        fun acceptConnection(playerId: UUID)
 
-        fun rejectConnection(connectionId: String)
+        fun rejectConnection(playerId: UUID)
 
         fun stopAdvertising()
+
+        fun sendStartingMessage(startingMoney: Int, players: List<PlayerDto>)
     }
 }
