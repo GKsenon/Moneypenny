@@ -52,10 +52,13 @@ class SocketHostGateway :
         while (isActive) {
             val clientSocket = serverSocket?.accept()
             if (clientSocket != null) {
+                val reader = clientSocket.getInputStream()?.bufferedReader()
+                val payload = reader?.readLine() ?: ""
+                val connectionRequest: Message = Json.decodeFromString(payload)
                 val clientId = UUID.randomUUID()
                 clientSockets[clientId] = clientSocket
                 val connectionEvent =
-                    HostMatchMaker.ClientConnectionEvent.Initiated(clientId, "")
+                    HostMatchMaker.ClientConnectionEvent.Initiated(clientId, (connectionRequest as Message.RequestConnection).name)
                 clientConnectionEvents.tryEmit(connectionEvent)
             }
         }

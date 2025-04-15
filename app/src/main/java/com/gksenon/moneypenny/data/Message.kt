@@ -6,6 +6,9 @@ import kotlinx.serialization.Serializable
 sealed class Message {
 
     @Serializable
+    class RequestConnection(val name: String): Message()
+
+    @Serializable
     class Accepted(val id: String): Message()
 
     @Serializable

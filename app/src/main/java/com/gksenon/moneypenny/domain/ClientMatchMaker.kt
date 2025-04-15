@@ -6,8 +6,8 @@ class ClientMatchMaker(private val gateway: Gateway) {
 
     val status = gateway.getConnectionStatus()
 
-    suspend fun connectToHost(ip: String, port: Int) {
-        gateway.connectToHost(ip, port)
+    suspend fun connectToHost(ip: String, port: Int, name: String) {
+        gateway.connectToHost(ip, port, name)
     }
 
     suspend fun close() {
@@ -22,7 +22,7 @@ class ClientMatchMaker(private val gateway: Gateway) {
 
         fun getConnectionStatus(): Flow<ConnectionStatus>
 
-        suspend fun connectToHost(ip: String, port: Int)
+        suspend fun connectToHost(ip: String, port: Int, name: String)
 
         suspend fun close()
     }

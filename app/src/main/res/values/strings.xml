@@ -16,6 +16,7 @@
     <string name="host_multiplayer_permission_request_rationale">Location and Bluetooth permissions are required to start a multiplayer game. Please grant the permissions.</string>
     <string name="request_permissions">Request the permissions</string>
     <string name="your_name">Your name</string>
+    <string name="host_address">Host address</string>
     <string name="connection_requests">Connection requests:</string>
     <string name="accept_player_content_description">Accept a player</string>
     <string name="deny_player_content_description">Deny a player</string>

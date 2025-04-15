@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Button
@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -70,11 +71,12 @@ fun JoinMultiplayerScreen(
             } else {
                 val state by viewModel.state.collectAsState()
                 when (state) {
-                    is JoinMultiplayerScreenState.PlayerNameRequested ->
+                    is JoinMultiplayerScreenState.DataInput ->
                         PlayerNameRequestedScreen(
-                            state = state as JoinMultiplayerScreenState.PlayerNameRequested,
+                            state = state as JoinMultiplayerScreenState.DataInput,
                             onNameChanged = { viewModel.onNameChanged(it) },
-                            onNameConfirmed = { viewModel.onNameConfirmed() }
+                            onHostAddressChanged = { viewModel.onHostAddressChanged(it) },
+                            onConfirmButtonClicked = { viewModel.onConfirmButtonClicked() }
                         )
 
                     JoinMultiplayerScreenState.DiscoveryStarted -> DiscoveryScreen()
@@ -82,6 +84,7 @@ fun JoinMultiplayerScreen(
                     JoinMultiplayerScreenState.AcceptedByHost -> AcceptedScreen()
                     JoinMultiplayerScreenState.RejectedByHost -> RejectedScreen(
                         onTryAgainButtonClicked = { viewModel.onTryAgainButtonClicked() })
+
                     JoinMultiplayerScreenState.GameStarted -> LaunchedEffect(state) { onNavigateToGameScreen() }
                 }
             }
@@ -102,23 +105,31 @@ fun PermissionsRequiredScreen(requestPermissions: () -> Unit) {
 
 @Composable
 fun PlayerNameRequestedScreen(
-    state: JoinMultiplayerScreenState.PlayerNameRequested,
+    state: JoinMultiplayerScreenState.DataInput,
     onNameChanged: (String) -> Unit,
-    onNameConfirmed: () -> Unit
+    onHostAddressChanged: (String) -> Unit,
+    onConfirmButtonClicked: () -> Unit
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
     ) {
-        OutlinedTextField(
-            value = state.name,
-            onValueChange = onNameChanged,
-            label = { Text(text = stringResource(id = R.string.your_name)) },
+        Column(
             modifier = Modifier.weight(1f)
-        )
+        ) {
+            OutlinedTextField(
+                value = state.name,
+                onValueChange = onNameChanged,
+                label = { Text(text = stringResource(id = R.string.your_name)) }
+            )
+            OutlinedTextField(
+                value = state.hostAddress,
+                onValueChange = onHostAddressChanged,
+                label = { Text(text = stringResource(id = R.string.host_address)) }
+            )
+        }
         FilledIconButton(
-            onClick = onNameConfirmed,
+            onClick = onConfirmButtonClicked,
             enabled = state.isConfirmButtonEnabled
         ) {
             Icon(

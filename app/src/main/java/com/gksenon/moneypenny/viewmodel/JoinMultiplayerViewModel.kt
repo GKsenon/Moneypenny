@@ -11,20 +11,21 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.min
 
 @HiltViewModel
 class JoinMultiplayerViewModel @Inject constructor(private val matchMaker: ClientMatchMaker) :
     ViewModel() {
 
     private val _state =
-        MutableStateFlow<JoinMultiplayerScreenState>(JoinMultiplayerScreenState.PlayerNameRequested())
+        MutableStateFlow<JoinMultiplayerScreenState>(JoinMultiplayerScreenState.DataInput())
     val state = _state.asStateFlow()
 
     init {
         matchMaker.status.onEach { status ->
             _state.update {
                 when (status) {
-                    ClientMatchMaker.ConnectionStatus.IDLE -> JoinMultiplayerScreenState.PlayerNameRequested()
+                    ClientMatchMaker.ConnectionStatus.IDLE -> JoinMultiplayerScreenState.DataInput()
                     ClientMatchMaker.ConnectionStatus.CONNECTING -> JoinMultiplayerScreenState.ConnectingToHost
                     ClientMatchMaker.ConnectionStatus.ACCEPTED -> JoinMultiplayerScreenState.AcceptedByHost
                     ClientMatchMaker.ConnectionStatus.REJECTED -> JoinMultiplayerScreenState.RejectedByHost
@@ -38,37 +39,60 @@ class JoinMultiplayerViewModel @Inject constructor(private val matchMaker: Clien
         viewModelScope.launch { matchMaker.close() }
     }
 
-    fun onNameChanged(value: String) =
-        _state.update {
-            JoinMultiplayerScreenState.PlayerNameRequested(
+    fun onNameChanged(value: String) = _state.update { previousState ->
+        if (previousState is JoinMultiplayerScreenState.DataInput)
+            previousState.copy(
                 name = value,
-                isConfirmButtonEnabled = value.isNotEmpty()
+                isConfirmButtonEnabled = isNameValid(value) && isHostAddressValid(previousState.hostAddress)
             )
-        }
+        else
+            JoinMultiplayerScreenState.DataInput(name = value)
+    }
 
-    fun onNameConfirmed() {
-        val name = (_state.value as JoinMultiplayerScreenState.PlayerNameRequested).name
-        //It's not a name, it's the host's ip address and port
-        //TODO: check the format of the address
-        val ip = name.split(":").first()
-        val port = name.split(":").last().toInt()
-        viewModelScope.launch { matchMaker.connectToHost(ip, port) }
+    fun onHostAddressChanged(value: String) {
+        _state.update { previousState ->
+            if(previousState is JoinMultiplayerScreenState.DataInput)
+                previousState.copy(
+                    hostAddress = value,
+                    isConfirmButtonEnabled = isNameValid(previousState.name) && isHostAddressValid(value)
+                )
+            else
+                JoinMultiplayerScreenState.DataInput(hostAddress = value)
+        }
+    }
+
+    fun onConfirmButtonClicked() {
+        val state = _state.value as JoinMultiplayerScreenState.DataInput
+        val name = state.name
+        val ip = state.hostAddress.split(":").first()
+        val port = state.hostAddress.split(":").last().toInt()
+        viewModelScope.launch { matchMaker.connectToHost(ip, port, name) }
     }
 
     fun onTryAgainButtonClicked() {
-        val name = (_state.value as JoinMultiplayerScreenState.PlayerNameRequested).name
-        //It's not a name, it's the host's ip address and port
-        //TODO: check the format of the address
-        val ip = name.split(":").first()
-        val port = name.split(":").last().toInt()
-        viewModelScope.launch { matchMaker.connectToHost(ip, port) }
+        _state.update { JoinMultiplayerScreenState.DataInput() }
+    }
+
+    private fun isNameValid(name: String) = name.isNotEmpty()
+
+    private fun isHostAddressValid(hostAddress: String): Boolean {
+        val addressParts = hostAddress.split(":")
+        if(addressParts.size != 2)
+            return false
+
+        val ipBytes = addressParts.first().split(".")
+        if(ipBytes.size != 4)
+            return false
+
+        return ipBytes.all { it.toIntOrNull() in 0 .. 256 } && addressParts.last().toIntOrNull() in 0 .. 65535
     }
 }
 
 sealed class JoinMultiplayerScreenState {
 
-    data class PlayerNameRequested(
+    data class DataInput(
         val name: String = "",
+        val hostAddress: String = "",
         val isConfirmButtonEnabled: Boolean = false
     ) : JoinMultiplayerScreenState()
 
@@ -80,5 +104,5 @@ sealed class JoinMultiplayerScreenState {
 
     data object RejectedByHost : JoinMultiplayerScreenState()
 
-    data object GameStarted: JoinMultiplayerScreenState()
+    data object GameStarted : JoinMultiplayerScreenState()
 }

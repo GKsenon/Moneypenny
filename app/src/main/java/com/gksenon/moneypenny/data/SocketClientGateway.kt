@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.net.Socket
 
@@ -25,8 +26,17 @@ class SocketClientGateway :
     private val players = MutableStateFlow<List<PlayerDto>>(emptyList())
     private val transactions = MutableStateFlow<List<TransactionDto>>(emptyList())
 
-    override suspend fun connectToHost(ip: String, port: Int): Unit = withContext(Dispatchers.IO) {
+    override suspend fun connectToHost(ip: String, port: Int, name: String): Unit = withContext(Dispatchers.IO) {
         socket = Socket(ip, port)
+        val writer = socket?.getOutputStream()?.bufferedWriter()
+        val connectionRequest: Message = Message.RequestConnection(name)
+        writer?.append(Json.encodeToString(connectionRequest))
+        writer?.newLine()
+        writer?.flush()
+        //TODO: if I close writer, will the socket be closed too?
+
+        connectionsStatus.value = ClientMatchMaker.ConnectionStatus.CONNECTING
+
         socket?.getInputStream()?.bufferedReader()?.use { reader ->
             while (isActive) {
                 val payload = reader.readLine()
@@ -41,6 +51,7 @@ class SocketClientGateway :
                         is Message.SaveTransaction -> {}
                         is Message.DeleteTransaction -> {}
                         is Message.Finish -> {}
+                        else -> {}
                     }
                 }
             }
@@ -48,6 +59,7 @@ class SocketClientGateway :
     }
 
     override suspend fun close() {
+        //TODO: close, when game is not started, keep, if in progress
         withContext(Dispatchers.IO) { socket?.close() }
         connectionsStatus.update { ClientMatchMaker.ConnectionStatus.IDLE }
     }
