@@ -6,20 +6,24 @@ class ClientMatchMaker(private val gateway: Gateway) {
 
     val status = gateway.getConnectionStatus()
 
-    fun startDiscovery(name: String) = gateway.startDiscovery(name)
+    suspend fun connectToHost(ip: String, port: Int) {
+        gateway.connectToHost(ip, port)
+    }
 
-    fun reset() = gateway.stopDiscovery()
+    suspend fun close() {
+        gateway.close()
+    }
 
     enum class ConnectionStatus {
-        IDLE, DISCOVERY, CONNECTING, ACCEPTED, REJECTED, STARTED
+        IDLE, CONNECTING, ACCEPTED, REJECTED, STARTED
     }
 
     interface Gateway {
 
         fun getConnectionStatus(): Flow<ConnectionStatus>
 
-        fun startDiscovery(name: String)
+        suspend fun connectToHost(ip: String, port: Int)
 
-        fun stopDiscovery()
+        suspend fun close()
     }
 }

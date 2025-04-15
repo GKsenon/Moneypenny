@@ -1,8 +1,8 @@
 package com.gksenon.moneypenny.di
 
 import com.gksenon.moneypenny.data.InMemoryGateway
-import com.gksenon.moneypenny.data.NearbyClientGateway
-import com.gksenon.moneypenny.data.NearbyHostGateway
+import com.gksenon.moneypenny.data.SocketClientGateway
+import com.gksenon.moneypenny.data.SocketHostGateway
 import com.gksenon.moneypenny.domain.ClientMatchMaker
 import com.gksenon.moneypenny.domain.HostMatchMaker
 import com.gksenon.moneypenny.domain.LocalMatchMaker
@@ -22,10 +22,10 @@ class MatchMakerModule {
 
     @Provides
     @Singleton
-    fun provideHostMatchMaker(gateway: NearbyHostGateway): HostMatchMaker = HostMatchMaker(gateway)
+    fun provideHostMatchMaker(gateway: SocketHostGateway): HostMatchMaker = HostMatchMaker(gateway)
 
     @Provides
     @Singleton
-    fun provideClientMatchMaker(gateway: NearbyClientGateway): ClientMatchMaker =
+    fun provideClientMatchMaker(gateway: SocketClientGateway): ClientMatchMaker =
         ClientMatchMaker(gateway)
 }

@@ -1,8 +1,8 @@
 package com.gksenon.moneypenny.di
 
 import com.gksenon.moneypenny.data.InMemoryGateway
-import com.gksenon.moneypenny.data.NearbyClientGateway
-import com.gksenon.moneypenny.data.NearbyHostGateway
+import com.gksenon.moneypenny.data.SocketClientGateway
+import com.gksenon.moneypenny.data.SocketHostGateway
 import com.gksenon.moneypenny.domain.Accountant
 import com.gksenon.moneypenny.domain.LOCAL_GAME
 import com.gksenon.moneypenny.domain.MULTIPLAYER_CLIENT_GAME
@@ -26,10 +26,10 @@ class AccountantModule {
     @Singleton
     @Provides
     @Named(MULTIPLAYER_HOST_GAME)
-    fun provideHostAccountant(gateway: NearbyHostGateway): Accountant = Accountant(gateway)
+    fun provideHostAccountant(gateway: SocketHostGateway): Accountant = Accountant(gateway)
 
     @Singleton
     @Provides
     @Named(MULTIPLAYER_CLIENT_GAME)
-    fun provideClientAccountant(gateway: NearbyClientGateway): Accountant = Accountant(gateway)
+    fun provideClientAccountant(gateway: SocketClientGateway): Accountant = Accountant(gateway)
 }

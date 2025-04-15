@@ -144,6 +144,7 @@ fun GameParamsScreen(
                 end = 16.dp
             )
     ) {
+        Text(text = state.hostAddress)
         OutlinedTextField(
             value = state.hostName,
             onValueChange = { value -> onHostNameChanged(value) },

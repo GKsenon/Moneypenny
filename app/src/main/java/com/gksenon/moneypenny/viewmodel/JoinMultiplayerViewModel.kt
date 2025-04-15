@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,7 +25,6 @@ class JoinMultiplayerViewModel @Inject constructor(private val matchMaker: Clien
             _state.update {
                 when (status) {
                     ClientMatchMaker.ConnectionStatus.IDLE -> JoinMultiplayerScreenState.PlayerNameRequested()
-                    ClientMatchMaker.ConnectionStatus.DISCOVERY -> JoinMultiplayerScreenState.DiscoveryStarted
                     ClientMatchMaker.ConnectionStatus.CONNECTING -> JoinMultiplayerScreenState.ConnectingToHost
                     ClientMatchMaker.ConnectionStatus.ACCEPTED -> JoinMultiplayerScreenState.AcceptedByHost
                     ClientMatchMaker.ConnectionStatus.REJECTED -> JoinMultiplayerScreenState.RejectedByHost
@@ -35,7 +35,7 @@ class JoinMultiplayerViewModel @Inject constructor(private val matchMaker: Clien
     }
 
     override fun onCleared() {
-        matchMaker.reset()
+        viewModelScope.launch { matchMaker.close() }
     }
 
     fun onNameChanged(value: String) =
@@ -48,12 +48,20 @@ class JoinMultiplayerViewModel @Inject constructor(private val matchMaker: Clien
 
     fun onNameConfirmed() {
         val name = (_state.value as JoinMultiplayerScreenState.PlayerNameRequested).name
-        matchMaker.startDiscovery(name)
+        //It's not a name, it's the host's ip address and port
+        //TODO: check the format of the address
+        val ip = name.split(":").first()
+        val port = name.split(":").last().toInt()
+        viewModelScope.launch { matchMaker.connectToHost(ip, port) }
     }
 
     fun onTryAgainButtonClicked() {
         val name = (_state.value as JoinMultiplayerScreenState.PlayerNameRequested).name
-        matchMaker.startDiscovery(name)
+        //It's not a name, it's the host's ip address and port
+        //TODO: check the format of the address
+        val ip = name.split(":").first()
+        val port = name.split(":").last().toInt()
+        viewModelScope.launch { matchMaker.connectToHost(ip, port) }
     }
 }
 

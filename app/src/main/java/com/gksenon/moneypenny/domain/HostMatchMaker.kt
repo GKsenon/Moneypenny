@@ -23,14 +23,15 @@ class HostMatchMaker(private val gateway: Gateway) {
             }
         }
     }
+    val hostAddress = gateway.getHostAddress()
 
-    fun startAdvertising() = gateway.startAdvertising()
+    suspend fun startAdvertising() = gateway.startAdvertising()
 
-    fun acceptConnection(connectionId: UUID) = gateway.acceptConnection(connectionId)
+    suspend fun acceptConnection(connectionId: UUID) = gateway.acceptConnection(connectionId)
 
-    fun rejectConnection(connectionId: UUID) = gateway.rejectConnection(connectionId)
+    suspend fun rejectConnection(connectionId: UUID) = gateway.rejectConnection(connectionId)
 
-    fun startGame(hostName: String, startingMoney: Int, players: List<Player>) {
+    suspend fun startGame(hostName: String, startingMoney: Int, players: List<Player>) {
         gateway.stopAdvertising()
         val bank = PlayerDto(id = BANK_ID, name = "Bank")
         val host = PlayerDto(id = HOST_ID, name = hostName)
@@ -40,7 +41,7 @@ class HostMatchMaker(private val gateway: Gateway) {
         )
     }
 
-    fun reset() {
+    suspend fun reset() {
         gateway.stopAdvertising()
     }
 
@@ -63,15 +64,17 @@ class HostMatchMaker(private val gateway: Gateway) {
 
     interface Gateway {
 
-        fun startAdvertising()
+        fun getHostAddress(): Flow<String>
 
         fun getClientConnectionEvents(): Flow<ClientConnectionEvent>
 
-        fun acceptConnection(playerId: UUID)
+        suspend fun startAdvertising()
 
-        fun rejectConnection(playerId: UUID)
+        suspend fun acceptConnection(playerId: UUID)
 
-        fun stopAdvertising()
+        suspend fun rejectConnection(playerId: UUID)
+
+        suspend fun stopAdvertising()
 
         fun sendStartingMessage(startingMoney: Int, players: List<PlayerDto>)
     }

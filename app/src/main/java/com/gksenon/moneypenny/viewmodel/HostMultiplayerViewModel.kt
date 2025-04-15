@@ -2,6 +2,7 @@ package com.gksenon.moneypenny.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gksenon.moneypenny.domain.HostMatchMaker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
@@ -23,15 +25,22 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
         matchMaker.players.onEach { players ->
             _state.update { previousState -> previousState.copy(players = players) }
         }.launchIn(viewModelScope)
+        matchMaker.hostAddress.onEach { hostAddress ->
+            _state.update { previousState -> previousState.copy(hostAddress = hostAddress) }
+        }.launchIn(viewModelScope)
     }
 
     override fun onCleared() {
         super.onCleared()
-        matchMaker.reset()
+        viewModelScope.launch { matchMaker.reset() }
     }
 
     fun onPermissionsGranted() {
-        matchMaker.startAdvertising()
+        viewModelScope.launch {
+            matchMaker.startAdvertising()
+//            println("HostVM: IP $hostAddress")
+//            _state.update { it.copy(hostAddress = hostAddress) }
+        }
     }
 
     fun onHostNameChanged(value: String) {
@@ -54,11 +63,11 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
     }
 
     fun onAcceptPlayerButtonClicked(playerId: UUID) {
-        matchMaker.acceptConnection(playerId)
+        viewModelScope.launch { matchMaker.acceptConnection(playerId) }
     }
 
     fun onDenyPlayerButtonClicked(playerId: UUID) {
-        matchMaker.rejectConnection(playerId)
+        viewModelScope.launch { matchMaker.rejectConnection(playerId) }
     }
 
     fun onStartButtonClicked() {
@@ -80,7 +89,7 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
         val hostName = _state.value.hostName
         val startingMoney = _state.value.startingMoney.toIntOrNull() ?: 0
         val players = _state.value.players
-        matchMaker.startGame(hostName, startingMoney, players)
+        viewModelScope.launch { matchMaker.startGame(hostName, startingMoney, players) }
         onNavigateToGameScreen()
     }
 
@@ -91,6 +100,7 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
 
 data class HostMultiplayerScreenState(
     val hostName: String = "",
+    val hostAddress: String = "",
     val showHostNameIsEmptyError: Boolean = false,
     val startingMoney: String = "",
     val showStartingMoneyInvalidError: Boolean = false,
