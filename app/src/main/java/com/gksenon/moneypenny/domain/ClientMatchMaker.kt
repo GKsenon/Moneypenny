@@ -10,7 +10,7 @@ class ClientMatchMaker(private val gateway: Gateway) {
         gateway.connectToHost(ip, port, name)
     }
 
-    suspend fun close() {
+    fun close() {
         gateway.close()
     }
 
@@ -24,6 +24,6 @@ class ClientMatchMaker(private val gateway: Gateway) {
 
         suspend fun connectToHost(ip: String, port: Int, name: String)
 
-        suspend fun close()
+        fun close()
     }
 }

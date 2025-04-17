@@ -32,16 +32,16 @@ class HostMatchMaker(private val gateway: Gateway) {
     suspend fun rejectConnection(connectionId: UUID) = gateway.rejectConnection(connectionId)
 
     suspend fun startGame(hostName: String, startingMoney: Int, players: List<Player>) {
-        gateway.stopAdvertising()
         val bank = PlayerDto(id = BANK_ID, name = "Bank")
         val host = PlayerDto(id = HOST_ID, name = hostName)
         gateway.sendStartingMessage(
             startingMoney = startingMoney,
             players = players.map { PlayerDto(it.id.toString(), it.name) } + host + bank
         )
+        gateway.stopAdvertising()
     }
 
-    suspend fun reset() {
+    fun reset() {
         gateway.stopAdvertising()
     }
 
@@ -74,8 +74,8 @@ class HostMatchMaker(private val gateway: Gateway) {
 
         suspend fun rejectConnection(playerId: UUID)
 
-        suspend fun stopAdvertising()
+        fun stopAdvertising()
 
-        fun sendStartingMessage(startingMoney: Int, players: List<PlayerDto>)
+        suspend fun sendStartingMessage(startingMoney: Int, players: List<PlayerDto>)
     }
 }

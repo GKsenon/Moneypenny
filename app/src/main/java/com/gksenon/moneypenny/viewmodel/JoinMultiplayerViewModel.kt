@@ -36,7 +36,7 @@ class JoinMultiplayerViewModel @Inject constructor(private val matchMaker: Clien
     }
 
     override fun onCleared() {
-        viewModelScope.launch { matchMaker.close() }
+        matchMaker.close()
     }
 
     fun onNameChanged(value: String) = _state.update { previousState ->
@@ -84,7 +84,7 @@ class JoinMultiplayerViewModel @Inject constructor(private val matchMaker: Clien
         if(ipBytes.size != 4)
             return false
 
-        return ipBytes.all { it.toIntOrNull() in 0 .. 256 } && addressParts.last().toIntOrNull() in 0 .. 65535
+        return ipBytes.all { it.toIntOrNull() in 0 until 256 } && addressParts.last().toIntOrNull() in 0 until Short.MAX_VALUE
     }
 }
 

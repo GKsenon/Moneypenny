@@ -5,6 +5,8 @@ import com.gksenon.moneypenny.domain.HostMatchMaker
 import com.gksenon.moneypenny.domain.dto.PlayerDto
 import com.gksenon.moneypenny.domain.dto.TransactionDto
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -14,9 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.IOException
 import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
@@ -27,8 +31,8 @@ import kotlin.random.nextInt
 class SocketHostGateway :
     HostMatchMaker.Gateway, Accountant.Gateway {
 
-    private val clientSockets = mutableMapOf<UUID, Socket>()
     private var serverSocket: ServerSocket? = null
+    private val clientSockets = mutableMapOf<UUID, Socket>()
 
     private val hostAddress = MutableStateFlow("")
     private val clientConnectionEvents = MutableSharedFlow<HostMatchMaker.ClientConnectionEvent>(
@@ -37,6 +41,7 @@ class SocketHostGateway :
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
+    private val playerSockets = mutableMapOf<UUID, Socket>()
     private var startingMoney = 0
     private val players = MutableStateFlow<List<PlayerDto>>(emptyList())
     private val transactions = MutableStateFlow<List<TransactionDto>>(emptyList())
@@ -46,21 +51,32 @@ class SocketHostGateway :
             .flatMap { it.inetAddresses.toList() }
             .find { it.isSiteLocalAddress }
         val port = Random.nextInt(1025 until Short.MAX_VALUE)
-        serverSocket = ServerSocket(port)
         hostAddress.update { "$ip:$port" }
 
-        while (isActive) {
-            val clientSocket = serverSocket?.accept()
-            if (clientSocket != null) {
+        try {
+            serverSocket = ServerSocket(port)
+            while (isActive) {
+                val clientSocket = serverSocket?.accept()
+                require(clientSocket != null)
+
                 val reader = clientSocket.getInputStream()?.bufferedReader()
-                val payload = reader?.readLine() ?: ""
+                require(reader != null)
+
+                val payload = reader.readLine()
                 val connectionRequest: Message = Json.decodeFromString(payload)
                 val clientId = UUID.randomUUID()
+                val clientName = (connectionRequest as Message.RequestConnection).name
                 clientSockets[clientId] = clientSocket
                 val connectionEvent =
-                    HostMatchMaker.ClientConnectionEvent.Initiated(clientId, (connectionRequest as Message.RequestConnection).name)
-                clientConnectionEvents.tryEmit(connectionEvent)
+                    HostMatchMaker.ClientConnectionEvent.Initiated(clientId, clientName)
+                clientConnectionEvents.emit(connectionEvent)
             }
+        } catch (ex: IOException) {
+            ex.printStackTrace()
+        } catch (ex: IllegalArgumentException) {
+            ex.printStackTrace()
+        } finally {
+            serverSocket?.close()
         }
     }
 
@@ -71,38 +87,74 @@ class SocketHostGateway :
     override suspend fun acceptConnection(playerId: UUID) = withContext(Dispatchers.IO) {
         val clientSocket = clientSockets[playerId]
         if (clientSocket != null) {
-            val message: Message = Message.Accepted(playerId.toString())
-            val payload = Json.encodeToString(message)
-            val writer = clientSocket.getOutputStream().bufferedWriter()
-            writer.append(payload)
-            writer.newLine()
-            writer.flush()
-
-            clientConnectionEvents.tryEmit(HostMatchMaker.ClientConnectionEvent.Connected(playerId))
+            try {
+                val message: Message = Message.Accepted(playerId.toString())
+                val payload = Json.encodeToString(message)
+                val writer = clientSocket.getOutputStream().bufferedWriter()
+                writer.append(payload)
+                writer.newLine()
+                writer.flush()
+                val connectionEvent = HostMatchMaker.ClientConnectionEvent.Connected(playerId)
+                clientConnectionEvents.emit(connectionEvent)
+            } catch (ex: IOException) {
+                ex.printStackTrace()
+            } catch (ex: IllegalArgumentException) {
+                ex.printStackTrace()
+            }
         }
     }
 
     override suspend fun rejectConnection(playerId: UUID) = withContext(Dispatchers.IO) {
         val clientSocket = clientSockets[playerId]
         if (clientSocket != null) {
-            clientSocket.close()
-            clientSockets.remove(playerId)
-            clientConnectionEvents.tryEmit(
-                HostMatchMaker.ClientConnectionEvent.Disconnected(
-                    playerId
-                )
-            )
+            try {
+                clientSocket.close()
+            } catch (ex: IOException) {
+                ex.printStackTrace()
+            }
+        }
+        clientSockets.remove(playerId)
+        val connectionEvent = HostMatchMaker.ClientConnectionEvent.Disconnected(playerId)
+        clientConnectionEvents.emit(connectionEvent)
+    }
+
+    override fun stopAdvertising() {
+        try {
+            serverSocket?.close()
+            clientSockets.forEach { (_, socket) -> socket.close() }
+            clientSockets.clear()
+        } catch (ex: IOException) {
+            ex.printStackTrace()
         }
     }
 
-    override suspend fun stopAdvertising(): Unit = withContext(Dispatchers.IO) {
-            clientSockets.forEach { (_, socket) -> socket.close() }
-            clientSockets.clear()
-            serverSocket?.close()
-        }
+    override suspend fun sendStartingMessage(startingMoney: Int, players: List<PlayerDto>) {
+        this.startingMoney = startingMoney
+        this.players.value = players
 
-    override fun sendStartingMessage(startingMoney: Int, players: List<PlayerDto>) {
-        TODO("Not yet implemented")
+        withContext(Dispatchers.IO) {
+            for (player in players) {
+                val playerId = UUID.fromString(player.id)
+                val clientSocket = clientSockets[playerId]
+                if (clientSocket != null) {
+                    playerSockets[playerId] = clientSocket
+                    try {
+                        val message: Message = Message.Start(
+                            startingMoney,
+                            players.map { PlayerEntity(it.id, it.name) }
+                        )
+                        val payload = Json.encodeToString(message)
+                        val writer = clientSocket.getOutputStream()?.bufferedWriter()
+                        writer?.append(payload)
+                        writer?.newLine()
+                        writer?.flush()
+                    } catch (ex: IOException) {
+                        ex.printStackTrace()
+                    }
+                }
+                clientSockets.remove(playerId)
+            }
+        }
     }
 
     override fun getStartingMoney(): Int = startingMoney
@@ -129,3 +181,4 @@ class SocketHostGateway :
         transactions.value = emptyList()
     }
 }
+

@@ -31,16 +31,11 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
     }
 
     override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch { matchMaker.reset() }
+        matchMaker.reset()
     }
 
     fun onPermissionsGranted() {
-        viewModelScope.launch {
-            matchMaker.startAdvertising()
-//            println("HostVM: IP $hostAddress")
-//            _state.update { it.copy(hostAddress = hostAddress) }
-        }
+        viewModelScope.launch { matchMaker.startAdvertising() }
     }
 
     fun onHostNameChanged(value: String) {
@@ -89,8 +84,10 @@ class HostMultiplayerViewModel @Inject constructor(private val matchMaker: HostM
         val hostName = _state.value.hostName
         val startingMoney = _state.value.startingMoney.toIntOrNull() ?: 0
         val players = _state.value.players
-        viewModelScope.launch { matchMaker.startGame(hostName, startingMoney, players) }
-        onNavigateToGameScreen()
+        viewModelScope.launch {
+            matchMaker.startGame(hostName, startingMoney, players)
+            onNavigateToGameScreen()
+        }
     }
 
     fun onStartGameConfirmationDialogDismissed() {
